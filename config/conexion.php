@@ -1,52 +1,47 @@
 <?php
 
-date_default_timezone_set(
-    "America/Argentina/Buenos_Aires"
-);
+date_default_timezone_set("America/Argentina/Jujuy");
 
-$servidor = "127.0.0.1";
-$puerto = 3307;
+/*
+ * LOCAL:
+ * usa los valores de XAMPP.
+ *
+ * RAILWAY:
+ * usa las variables de entorno del servicio MySQL.
+ */
 
-$baseDatos = "instituto";
-
-$usuario = "root";
-$contrasena = "";
+$servidor = getenv("DB_HOST") ?: "127.0.0.1";
+$puerto = getenv("DB_PORT") ?: "3307";
+$baseDatos = getenv("DB_NAME") ?: "instituto";
+$usuario = getenv("DB_USER") ?: "root";
+$contrasena = getenv("DB_PASSWORD") ?: "";
 
 try {
-
     $conexion = new PDO(
-        "mysql:host=$servidor;" .
-        "port=$puerto;" .
-        "dbname=$baseDatos;" .
-        "charset=utf8mb4",
+        "mysql:host={$servidor};port={$puerto};dbname={$baseDatos};charset=utf8mb4",
         $usuario,
-        $contrasena
+        $contrasena,
+        [
+            PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
+            PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
+            PDO::ATTR_EMULATE_PREPARES => false
+        ]
     );
-
-    $conexion->setAttribute(
-        PDO::ATTR_ERRMODE,
-        PDO::ERRMODE_EXCEPTION
-    );
-
-    $conexion->setAttribute(
-        PDO::ATTR_DEFAULT_FETCH_MODE,
-        PDO::FETCH_ASSOC
-    );
-
 } catch (PDOException $error) {
+    error_log("Error de conexión a la base de datos: " . $error->getMessage());
 
     die(
-        "No se pudo conectar con la base de datos: " .
-        $error->getMessage()
+        "No fue posible conectar con la base de datos."
     );
 }
 
-
-function e($texto): string
-{
-    return htmlspecialchars(
-        (string) $texto,
-        ENT_QUOTES,
-        "UTF-8"
-    );
+if (!function_exists("e")) {
+    function e(mixed $texto): string
+    {
+        return htmlspecialchars(
+            (string) $texto,
+            ENT_QUOTES,
+            "UTF-8"
+        );
+    }
 }

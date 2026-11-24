@@ -5,7 +5,7 @@ require_once __DIR__ . "/../config/conexion.php";
 set_time_limit(0);
 
 $direccion = "0.0.0.0";
-$puerto = 8080;
+$puerto = (int) (getenv("PORT") ?: 8080);
 
 $servidor = stream_socket_server(
     "tcp://{$direccion}:{$puerto}",
