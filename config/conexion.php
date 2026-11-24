@@ -7,14 +7,29 @@ date_default_timezone_set("America/Argentina/Jujuy");
  * usa los valores de XAMPP.
  *
  * RAILWAY:
- * usa las variables de entorno del servicio MySQL.
+ * usa directamente las variables MYSQL*
+ * que Railway ya inyecta en el servicio.
  */
 
-$servidor = getenv("DB_HOST") ?: "127.0.0.1";
-$puerto = getenv("DB_PORT") ?: "3307";
-$baseDatos = getenv("DB_NAME") ?: "instituto";
-$usuario = getenv("DB_USER") ?: "root";
-$contrasena = getenv("DB_PASSWORD") ?: "";
+$servidor = getenv("MYSQLHOST")
+    ?: getenv("DB_HOST")
+    ?: "127.0.0.1";
+
+$puerto = getenv("MYSQLPORT")
+    ?: getenv("DB_PORT")
+    ?: "3307";
+
+$baseDatos = getenv("MYSQLDATABASE")
+    ?: getenv("DB_NAME")
+    ?: "instituto";
+
+$usuario = getenv("MYSQLUSER")
+    ?: getenv("DB_USER")
+    ?: "root";
+
+$contrasena = getenv("MYSQLPASSWORD")
+    ?: getenv("DB_PASSWORD")
+    ?: "";
 
 try {
     $conexion = new PDO(
@@ -27,8 +42,13 @@ try {
             PDO::ATTR_EMULATE_PREPARES => false
         ]
     );
+
 } catch (PDOException $error) {
-    error_log("Error de conexión a la base de datos: " . $error->getMessage());
+
+    error_log(
+        "Error de conexión a la base de datos: "
+        . $error->getMessage()
+    );
 
     die(
         "No fue posible conectar con la base de datos."
