@@ -1,0 +1,442 @@
+/* ==============================
+   VARIABLES (mismas del TP 8)
+================================= */
+
+:root {
+    --azul-institucional: #456fbb;
+    --azul-profundo: #2c374e;
+    --azul-medio: #438fca;
+    --celeste-acento: #36b5df;
+    --gris-azulado: #edf3f8;
+    --blanco-suave: #f9fbfd;
+    --texto-principal: #253047;
+    --texto-secundario: #657086;
+    --borde-suave: #d6dfeb;
+    --blanco: #ffffff;
+
+    /* Solo para indicar si una variación sube o baja */
+    --verde: #2f9e77;
+    --rojo: #d64545;
+}
+
+/* ==============================
+   ESTILOS GENERALES
+================================= */
+
+body {
+    color: var(--texto-principal);
+    background-color: var(--gris-azulado);
+    font-family: "Segoe UI", Arial, sans-serif;
+}
+
+/* ==============================
+   MENÚ LATERAL
+================================= */
+
+.sidebar {
+    width: 250px;
+    min-height: 100vh;
+    flex-shrink: 0;
+    padding: 1.5rem 0;
+    background: var(--azul-profundo);
+}
+
+.sidebar-titulo {
+    margin-bottom: 1.5rem;
+    padding: 0 1.5rem;
+    color: var(--blanco);
+    font-weight: 700;
+    letter-spacing: 0.15em;
+}
+
+.sidebar .nav-link {
+    margin: 2px 12px;
+    padding: 0.65rem 1rem;
+    color: rgba(255, 255, 255, 0.78);
+    border-radius: 8px;
+    transition: background-color 0.2s, color 0.2s;
+}
+
+.sidebar .nav-link i {
+    margin-right: 0.6rem;
+}
+
+.sidebar .nav-link:hover {
+    color: var(--blanco);
+    background: rgba(255, 255, 255, 0.12);
+}
+
+.sidebar .nav-link.active {
+    color: var(--blanco);
+    background: var(--azul-institucional);
+}
+
+/* ==============================
+   CONTENIDO Y BARRA SUPERIOR
+================================= */
+
+.contenido {
+    min-width: 0;          /* evita que los gráficos desborden */
+    min-height: 100vh;
+}
+
+.barra-superior {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 0.9rem 1.5rem;
+    background: var(--blanco);
+    border-bottom: 3px solid var(--celeste-acento);
+}
+
+.titulo-pagina {
+    margin: 0 auto 0 0;
+    color: var(--azul-profundo);
+    font-size: 1.3rem;
+    font-weight: 700;
+}
+
+/* ==============================
+   TARJETAS DE MÉTRICAS
+================================= */
+
+.tarjeta-metrica {
+    height: 100%;
+    padding: 1.1rem 1.3rem;
+    background: var(--blanco);
+    border: 1px solid var(--borde-suave);
+    border-radius: 14px;
+    box-shadow: 0 6px 18px rgba(44, 55, 78, 0.06);
+}
+
+.tarjeta-metrica .etiqueta {
+    display: block;
+    color: var(--texto-secundario);
+    font-size: 0.88rem;
+}
+
+.tarjeta-metrica .valor {
+    display: block;
+    margin: 0.15rem 0;
+    color: var(--azul-profundo);
+    font-size: 1.9rem;
+    font-weight: 700;
+    line-height: 1.15;
+}
+
+.tarjeta-metrica .variacion {
+    font-size: 0.85rem;
+    font-weight: 600;
+}
+
+.variacion.sube  { color: var(--verde); }
+.variacion.baja  { color: var(--rojo); }
+.variacion.igual { color: var(--texto-secundario); }
+
+/* ==============================
+   PANELES (gráficos y tablas)
+================================= */
+
+.tarjeta-panel {
+    height: 100%;
+    padding: 1.2rem 1.4rem;
+    background: var(--blanco);
+    border: 1px solid var(--borde-suave);
+    border-radius: 14px;
+    box-shadow: 0 6px 18px rgba(44, 55, 78, 0.06);
+}
+
+.tarjeta-panel h2 {
+    margin-bottom: 1rem;
+    color: var(--azul-profundo);
+    font-size: 1.05rem;
+    font-weight: 700;
+}
+
+/* ==============================
+   RESPONSIVE
+================================= */
+
+@media (max-width: 991.98px) {
+
+    .sidebar {
+        position: fixed;
+        top: 0;
+        left: -260px;
+        z-index: 1040;
+        height: 100%;
+        transition: left 0.3s;
+    }
+
+    .sidebar.abierto {
+        left: 0;
+    }
+}
+/* Altura fija para los gráficos (Chart.js la necesita) */
+.grafico {
+    position: relative;
+    height: 300px;
+}
+/* ==============================
+   TABLAS
+================================= */
+
+.tabla-datos {
+    margin-bottom: 0;
+}
+
+.tabla-datos thead th {
+    color: var(--texto-secundario);
+    background: var(--blanco-suave);
+    border-bottom: 2px solid var(--borde-suave);
+    font-size: 0.8rem;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    white-space: nowrap;
+}
+
+.tabla-datos td {
+    vertical-align: middle;
+}
+
+/* Insignias: estados de pedidos y roles */
+
+.insignia {
+    display: inline-block;
+    padding: 0.2rem 0.65rem;
+    border-radius: 999px;
+    font-size: 0.78rem;
+    font-weight: 700;
+}
+
+.insignia-completado { color: #1d7a58; background: #dff5ec; }
+.insignia-enviado    { color: #2c5f9e; background: #e3eefb; }
+.insignia-pendiente  { color: #a96a10; background: #fdf0dc; }
+.insignia-cancelado  { color: #b13a3a; background: #fbe4e4; }
+
+.insignia-admin      { color: var(--blanco); background: var(--azul-profundo); }
+.insignia-usuario    { color: var(--blanco); background: var(--azul-medio); }
+
+/* ==============================
+   BUSCADOR Y FILTROS
+================================= */
+
+.barra-filtros {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    margin-bottom: 1.25rem;
+}
+
+.barra-filtros .buscador {
+    flex: 1 1 260px;
+}
+
+.barra-filtros select {
+    flex: 0 1 200px;
+}
+
+/* Botón principal (igual al del TP 8) */
+
+.boton-principal {
+    color: var(--blanco);
+    background: var(--azul-institucional);
+    border: 1px solid var(--azul-institucional);
+}
+
+.boton-principal:hover,
+.boton-principal:focus {
+    color: var(--blanco);
+    background: var(--azul-profundo);
+    border-color: var(--azul-profundo);
+}
+/* Menú lateral fijo en pantallas grandes */
+@media (min-width: 992px) {
+    .sidebar {
+        position: sticky;
+        top: 0;
+        align-self: flex-start;
+        height: 100vh;
+        overflow-y: auto;
+    }
+}
+/* Insignias de stock */
+.insignia-stock-ok   { color: #1d7a58; background: #dff5ec; }
+.insignia-stock-bajo { color: #b13a3a; background: #fbe4e4; }
+/* ==============================
+   RESPONSIVE: AJUSTES FINOS
+================================= */
+
+/* El fondo oscuro del menú está oculto por defecto */
+.sidebar-fondo {
+    display: none;
+}
+
+/* Tablet y celular: al abrir el menú, se oscurece el resto */
+@media (max-width: 991.98px) {
+
+    .sidebar.abierto + .sidebar-fondo {
+        position: fixed;
+        inset: 0;
+        z-index: 1030;
+        display: block;
+        background: rgba(44, 55, 78, 0.55);
+    }
+}
+
+/* Celular */
+@media (max-width: 767.98px) {
+
+    .barra-superior {
+        padding: 0.7rem 1rem;
+    }
+
+    .titulo-pagina {
+        font-size: 1.15rem;
+    }
+
+    /* Buscador y desplegable ocupan toda la fila;
+       Buscar y Limpiar comparten la siguiente */
+    .barra-filtros .buscador,
+    .barra-filtros select {
+        flex: 1 1 100%;
+    }
+
+    .barra-filtros .btn {
+        flex: 1 1 calc(50% - 0.4rem);
+    }
+
+    .tarjeta-panel {
+        padding: 1rem;
+    }
+
+    .tarjeta-metrica .valor {
+        font-size: 1.6rem;
+    }
+
+    .grafico {
+        height: 240px;
+    }
+}
+
+/* ==================================================
+   NOTIFICACIONES
+================================================== */
+
+.notificaciones-contenedor {
+    position: relative;
+}
+
+.panel-notificaciones {
+    position: absolute;
+
+    top: calc(100% + 10px);
+    right: 0;
+
+    width: min(360px, 90vw);
+
+    background: #ffffff;
+
+    border: 1px solid #dbe2ea;
+
+    border-radius: 12px;
+
+    box-shadow:
+        0 12px 35px
+        rgba(32, 48, 78, 0.18);
+
+    z-index: 2000;
+
+    overflow: hidden;
+}
+
+
+.panel-notificaciones-header {
+    display: flex;
+
+    justify-content: space-between;
+    align-items: center;
+
+    gap: 10px;
+
+    padding: 14px 16px;
+
+    border-bottom:
+        1px solid #e7ebf0;
+
+    background: #f7f9fc;
+}
+
+
+.lista-notificaciones {
+    max-height: 380px;
+
+    overflow-y: auto;
+}
+
+
+.notificacion-item {
+    padding: 14px 16px;
+
+    border-bottom:
+        1px solid #edf0f4;
+
+    background: #ffffff;
+}
+
+
+.notificacion-item:last-child {
+    border-bottom: 0;
+}
+
+
+.notificacion-item strong {
+    display: block;
+
+    margin-bottom: 4px;
+
+    color: #26344f;
+}
+
+
+.notificacion-item p {
+    margin: 0;
+
+    color: #6a7485;
+
+    font-size: 0.9rem;
+}
+
+
+.notificacion-item small {
+    display: block;
+
+    margin-top: 6px;
+
+    color: #98a0ad;
+}
+
+
+.notificacion-item.nueva {
+    background: #eef6ff;
+}
+
+
+@media (max-width: 767px) {
+
+    .panel-notificaciones {
+
+        position: fixed;
+
+        top: 70px;
+        right: 12px;
+        left: 12px;
+
+        width: auto;
+
+    }
+
+}
+.dashboard-accesos {
+    margin-bottom: 1.5rem;
+}
