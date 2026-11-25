@@ -70,3 +70,18 @@ if (formularioAlumno) {
         }
     );
 }
+
+const botonMostrar = document.querySelector("#mostrarPassword[aria-controls]");
+
+if (botonMostrar) {
+    const campoPassword = document.getElementById(botonMostrar.getAttribute("aria-controls"));
+    const icono = botonMostrar.querySelector(".bi");
+
+    botonMostrar.addEventListener("click", () => {
+        const mostrar = campoPassword.type === "password";
+        campoPassword.type = mostrar ? "text" : "password";
+        botonMostrar.setAttribute("aria-label", mostrar ? "Ocultar contraseña" : "Mostrar contraseña");
+        icono.classList.toggle("bi-eye", !mostrar);
+        icono.classList.toggle("bi-eye-slash", mostrar);
+    });
+}

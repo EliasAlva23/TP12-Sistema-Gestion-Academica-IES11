@@ -1,47 +1,31 @@
 <?php
-session_start();
 
-require_once __DIR__ . "/config/conexion.php";
+require_once __DIR__ . "/includes/app.php";
 
-/* Solo permite solicitudes enviadas desde el formulario */
+iniciar_sesion();
+
 if ($_SERVER["REQUEST_METHOD"] !== "POST") {
-    header("Location: login.php");
-    exit;
+    redirigir("login.php");
 }
 
-/* Verifica el token CSRF del inicio de sesión */
-$tokenCsrf = $_POST["csrf_login"] ?? null;
+if (!empty($_SESSION["usuario_id"])) {
+    redirigir("dashboard.php", [], 303);
+}
 
-if (
-    !is_string($tokenCsrf) ||
-    empty($_SESSION["csrf_login"]) ||
-    !hash_equals(
-        $_SESSION["csrf_login"],
-        $tokenCsrf
-    )
-) {
-    http_response_code(403);
-
-    exit(
-        "Solicitud no válida. Volvé al formulario " .
-        "de inicio de sesión e intentá nuevamente."
-    );
+if (!csrf_validar($_POST["csrf_login"] ?? null, "csrf_login")) {
+    error_acceso(403, "La solicitud no es válida.");
 }
 
 /* Recibe y limpia los datos */
-$identificador = trim($_POST["identificador"] ?? "");
-$contrasena = $_POST["password"] ?? "";
+$identificador = trim(is_string($_POST["identificador"] ?? null) ? $_POST["identificador"] : "");
+$contrasena = (is_string($_POST["password"] ?? null) ? $_POST["password"] : "");
 
 /* Valida los campos obligatorios */
 if ($identificador === "" || $contrasena === "") {
-    header(
-        "Location: login.php?tipo=error&mensaje="
-        . urlencode(
-            "Completá el usuario o correo y la contraseña."
-        )
-    );
-    exit;
+    redirigir("login.php", ["tipo" => "error", "mensaje" => "Completá el usuario o correo y la contraseña."], 303);
 }
+
+require_once __DIR__ . "/config/conexion.php";
 
 try {
 
@@ -104,14 +88,7 @@ try {
 
     /* Bloquea temporalmente después de 5 intentos fallidos */
     if ($cantidadIntentos >= 5) {
-        header(
-            "Location: login.php?tipo=error&mensaje="
-            . urlencode(
-                "Demasiados intentos de acceso. "
-                . "Intentá nuevamente en unos minutos."
-            )
-        );
-        exit;
+        redirigir("login.php", ["tipo" => "error", "mensaje" => "Demasiados intentos de acceso. " . "Intentá nuevamente en unos minutos."], 303);
     }
 
     /* Comprueba la existencia de la cuenta y su contraseña */
@@ -133,13 +110,7 @@ try {
             ":clave_hash" => $claveHash
         ]);
 
-        header(
-            "Location: login.php?tipo=error&mensaje="
-            . urlencode(
-                "Usuario, correo o contraseña incorrectos."
-            )
-        );
-        exit;
+        redirigir("login.php", ["tipo" => "error", "mensaje" => "Usuario, correo o contraseña incorrectos."], 303);
     }
 
     /* Limpia los intentos después de un acceso correcto */
@@ -155,28 +126,18 @@ try {
     /* Renueva el identificador de sesión */
     session_regenerate_id(true);
 
-    /* Guarda los datos del usuario en la sesión */
-    $_SESSION["usuario_id"] = $usuarioEncontrado["id"];
+    $_SESSION = [
+        "usuario_id" => $usuarioEncontrado["id"],
+        "usuario" => $usuarioEncontrado["usuario"],
+        "email" => $usuarioEncontrado["email"],
+        "rol" => $usuarioEncontrado["rol"],
+        "ultima_actividad" => time(),
+    ];
 
-    $_SESSION["usuario"] = $usuarioEncontrado["usuario"];
-
-    $_SESSION["email"] = $usuarioEncontrado["email"];
-
-    $_SESSION["rol"] = $usuarioEncontrado["rol"];
-
-    /* Redirige al panel correspondiente */
-    header("Location: dashboard.php");
-    exit;
+    redirigir("dashboard.php", [], 303);
 
 } catch (PDOException $error) {
+    error_log("Inicio de sesión: " . $error->getMessage());
 
-    header(
-        "Location: login.php?tipo=error&mensaje="
-        . urlencode(
-            "No fue posible iniciar sesión. "
-            . "Intentá nuevamente."
-        )
-    );
-
-    exit;
+    redirigir("login.php", ["tipo" => "error", "mensaje" => "No fue posible iniciar sesión. " . "Intentá nuevamente."], 303);
 }

@@ -6,74 +6,42 @@
 
 $rolesPermitidos = ["Invitado"];
 require_once __DIR__ . "/../includes/verificar_rol.php";
+$titulo = "Panel de invitado";
+$pagina = "panel";
+require __DIR__ . "/../includes/header.php";
 ?>
-<!DOCTYPE html>
-<html lang="es">
 
-<head>
-    <meta charset="UTF-8">
-    <meta
-        name="viewport"
-        content="width=device-width, initial-scale=1.0"
-    >
-
-    <title>Panel de invitado | Sistema de Gestión Académica</title>
-
-    <link
-        href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
-        rel="stylesheet"
-    >
-    <link
-        href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css"
-        rel="stylesheet"
-    >
-    <link rel="stylesheet" href="../assets/css/estilos.css">
-</head>
-
-<body>
-
-    <?php require __DIR__ . "/../includes/navbar.php"; ?>
-
-    <header class="encabezado">
-        <div class="container py-4">
-            <p class="etiqueta mb-2">Módulo del Invitado</p>
-            <h1 class="mb-1">Panel de invitado</h1>
-            <p class="mb-0">
-                Bienvenido/a, <?= esc($_SESSION["usuario"]) ?>.
-            </p>
-        </div>
+    <main id="contenido-principal" tabindex="-1" class="pagina-contenido">
+    <header class="encabezado-pagina">
+        <h1>Panel de invitado</h1>
     </header>
 
-    <main class="container py-5">
+        <section class="tarjeta-panel">
 
-        <section class="tarjeta-principal">
-
-            <div class="cabecera-listado">
-                <div>
+            <div class="mb-3">
                     <h2>Información general</h2>
                     <p>Datos públicos del instituto.</p>
-                </div>
             </div>
 
-            <div class="datos-cuenta">
+            <dl class="datos-cuenta mb-0">
                 <div>
-                    <span>Institución</span>
-                    <strong>Instituto de Educación Superior N.º 11</strong>
+                    <dt>Institución</dt>
+                    <dd>Instituto de Educación Superior N.º 11</dd>
                 </div>
 
                 <div>
-                    <span>Carrera</span>
-                    <strong>Tecnicatura Superior en Desarrollo de Software</strong>
+                    <dt>Carrera</dt>
+                    <dd>Tecnicatura Superior en Desarrollo de Software</dd>
                 </div>
 
                 <div>
-                    <span>Tu nivel de acceso</span>
-                    <strong>Solo lectura</strong>
+                    <dt>Tu nivel de acceso</dt>
+                    <dd>Solo lectura</dd>
                 </div>
-            </div>
+            </dl>
 
-            <div class="aviso-permisos">
-                <i class="bi bi-info-circle"></i>
+            <div class="alert alert-info mt-4 mb-0 d-flex gap-2">
+                <i class="bi bi-info-circle" aria-hidden="true"></i>
                 <p>
                     Con el perfil de invitado no podés ver datos de
                     alumnos ni modificar información. Si necesitás más
@@ -86,9 +54,5 @@ require_once __DIR__ . "/../includes/verificar_rol.php";
 
     </main>
 
-    <script
-        src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
-    ></script>
-
-</body>
+    </body>
 </html>

@@ -1,18 +1,25 @@
 <?php
 
-require_once __DIR__ . "/includes/verificar_sesion.php";
-require_once "config/conexion.php";
+$seccionRequerida = "alumnos";
+require_once __DIR__ . "/includes/verificar_rol.php";
 
 $titulo = "Alumnos";
 
 $pagina = "alumnos";
+$puedeEditar = puede_acceder("crud_alumnos", $_SESSION["rol"]);
+$mensajes = [
+    "guardado" => ["success", "El alumno fue agregado."],
+    "actualizado" => ["success", "Los datos del alumno fueron actualizados."],
+    "eliminado" => ["success", "El alumno fue eliminado."],
+    "no_encontrado" => ["warning", "El alumno indicado no está disponible."],
+    "error_eliminar" => ["danger", "No fue posible eliminar el alumno."],
+];
+$codigoMensaje = $_GET["mensaje"] ?? "";
+$aviso = is_string($codigoMensaje) ? ($mensajes[$codigoMensaje] ?? null) : null;
 
 
 $buscar =
-    trim(
-        $_GET["buscar"]
-        ?? ""
-    );
+    trim(is_string($_GET["buscar"] ?? null) ? $_GET["buscar"] : "");
 
 
 $parametros = [];
@@ -34,12 +41,11 @@ if ($buscar !== "") {
     $sql .=
 
         " WHERE
-            nombre LIKE :buscar
-            OR apellido LIKE :buscar
-            OR email LIKE :buscar";
+            nombre LIKE :nombre
+            OR apellido LIKE :apellido
+            OR email LIKE :email";
 
-    $parametros[":buscar"] =
-        "%" . $buscar . "%";
+    $parametros = array_fill_keys([":nombre", ":apellido", ":email"], "%" . $buscar . "%");
 }
 
 
@@ -65,114 +71,62 @@ $alumnos =
     $consulta->fetchAll();
 
 
-include "includes/header.php";
-
-include "includes/sidebar.php";
+require __DIR__ . "/includes/header.php";
 
 ?>
 
 
-<div class="contenido flex-grow-1">
-
-
-    <div class="barra-superior">
-
-        <button
-            class="btn d-lg-none"
-            id="botonMenu"
-            aria-label="Abrir menú"
-        >
-
-            <i class="bi bi-list fs-4"></i>
-
-        </button>
-
-
-        <h1 class="titulo-pagina">
-
-            Alumnos
-
-        </h1>
-
-
-        <span>
-
-            <i class="bi bi-mortarboard"></i>
-
-            IES N.º 11
-
-        </span>
-
-    </div>
-
-
-    <main class="p-3 p-md-4">
+<main id="contenido-principal" tabindex="-1" class="pagina-contenido">
+    <header class="encabezado-pagina">
+        <h1><?= esc($titulo) ?></h1>
+        <p>Buscá legajos por nombre, apellido o correo electrónico.</p>
+    </header>
+        <?php if ($aviso): ?>
+            <p class="alert alert-<?= esc($aviso[0]) ?>" role="status"><?= esc($aviso[1]) ?></p>
+        <?php endif; ?>
 
 
         <div class="tarjeta-panel">
 
 
-            <h2>
-                Alumnos registrados
-            </h2>
+            <div class="d-flex flex-wrap gap-2 align-items-center justify-content-between mb-3">
+                <h2 class="mb-0">Alumnos registrados</h2>
+                <?php if ($puedeEditar): ?>
+                    <a href="<?= esc(url_app("agregar.php")) ?>" class="btn boton-principal">Agregar alumno</a>
+                <?php endif; ?>
+            </div>
 
 
             <form
                 method="GET"
+                action="<?= esc(url_app("alumnos.php")) ?>"
                 class="barra-filtros"
             >
 
-                <input
-                    type="search"
-                    name="buscar"
-                    class="
-                        form-control
-                        buscador
-                    "
-                    placeholder="
-                        Buscar por nombre,
-                        apellido o correo..."
-                    value="<?= e($buscar) ?>"
-                >
+                <div class="filtro-busqueda">
+                    <label for="buscar-alumnos" class="form-label">Buscar alumnos</label>
+                    <input id="buscar-alumnos" name="buscar" type="search" class="form-control"
+                           placeholder="Nombre, apellido o correo" value="<?= esc($buscar) ?>">
+                </div>
 
 
-                <button
-                    type="submit"
-                    class="
-                        btn
-                        boton-principal
-                    "
-                >
-
-                    <i class="bi bi-search"></i>
-
-                    Buscar
-
-                </button>
-
-
-                <a
-                    href="alumnos.php"
-                    class="
-                        btn
-                        btn-outline-secondary
-                    "
-                >
-
-                    Limpiar
-
-                </a>
+                <div class="acciones-filtro">
+                    <button type="submit" class="btn boton-principal">
+                        <i class="bi bi-search" aria-hidden="true"></i> Buscar
+                    </button>
+                    <a href="<?= esc(url_app("alumnos.php")) ?>" class="btn btn-outline-secondary">Limpiar</a>
+                </div>
 
             </form>
 
 
-            <div class="table-responsive">
+            <div class="table-responsive" tabindex="0" role="region" aria-label="Alumnos registrados">
 
                 <table
                     class="
                         table
                         table-hover
-                        tabla-datos
+                        tabla-datos tabla-registros
                     "
                 >
 
@@ -180,15 +134,16 @@ include "includes/sidebar.php";
 
                         <tr>
 
-                            <th>ID</th>
+                            <th scope="col">ID</th>
 
-                            <th>Nombre</th>
+                            <th scope="col">Nombre</th>
 
-                            <th>Apellido</th>
+                            <th scope="col">Apellido</th>
 
-                            <th>Correo</th>
+                            <th scope="col">Correo</th>
 
-                            <th>Fecha de alta</th>
+                            <th scope="col">Fecha de alta</th>
+                            <?php if ($puedeEditar): ?><th scope="col">Acciones</th><?php endif; ?>
 
                         </tr>
 
@@ -206,7 +161,7 @@ include "includes/sidebar.php";
                         <tr>
 
                             <td
-                                colspan="5"
+                                colspan="<?= $puedeEditar ? 6 : 5 ?>"
                                 class="
                                     text-center
                                     text-muted
@@ -241,7 +196,7 @@ include "includes/sidebar.php";
 
                             <td>
 
-                                <?= e(
+                                <?= esc(
                                     $alumno["nombre"]
                                 ) ?>
 
@@ -250,7 +205,7 @@ include "includes/sidebar.php";
 
                             <td>
 
-                                <?= e(
+                                <?= esc(
                                     $alumno["apellido"]
                                 ) ?>
 
@@ -259,7 +214,7 @@ include "includes/sidebar.php";
 
                             <td>
 
-                                <?= e(
+                                <?= esc(
                                     $alumno["email"]
                                 ) ?>
 
@@ -278,7 +233,18 @@ include "includes/sidebar.php";
                                 ) ?>
 
                             </td>
-
+                            <?php if ($puedeEditar): ?>
+                                <td>
+                                    <div class="acciones-tabla">
+                                        <a class="btn btn-sm btn-outline-primary"
+                                           aria-label="Editar a <?= esc($alumno["nombre"] . " " . $alumno["apellido"]) ?>"
+                                           href="<?= esc(url_app("editar.php", ["id" => (int) $alumno["id"]])) ?>">Editar</a>
+                                        <a class="btn btn-sm btn-outline-danger"
+                                           aria-label="Eliminar a <?= esc($alumno["nombre"] . " " . $alumno["apellido"]) ?>"
+                                           href="<?= esc(url_app("eliminar.php", ["id" => (int) $alumno["id"]])) ?>">Eliminar</a>
+                                    </div>
+                                </td>
+                            <?php endif; ?>
                         </tr>
 
 
@@ -294,23 +260,6 @@ include "includes/sidebar.php";
         </div>
 
     </main>
-
-</div>
-
-
-</div>
-
-
-<script
-    src="
-    https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
-></script>
-
-
-<script
-    src="assets/js/scripts.js"
-></script>
-
 
 </body>
 

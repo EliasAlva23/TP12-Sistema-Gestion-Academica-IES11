@@ -1,15 +1,6 @@
 <?php
 
-session_start();
+require_once __DIR__ . "/includes/app.php";
 
-if (isset($_SESSION["usuario_id"])) {
-
-    header("Location: dashboard.php");
-
-} else {
-
-    header("Location: login.php");
-
-}
-
-exit;
+iniciar_sesion();
+redirigir(empty($_SESSION["usuario_id"]) ? "login.php" : "dashboard.php");

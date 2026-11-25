@@ -1,9 +1,10 @@
 <?php
-session_start();
+require_once __DIR__ . "/includes/app.php";
+
+iniciar_sesion();
 
 if (isset($_SESSION["usuario_id"])) {
-    header("Location: dashboard.php");
-    exit;
+    redirigir("dashboard.php");
 }
 
 /* Genera un token CSRF para el registro público */
@@ -13,42 +14,14 @@ if (empty($_SESSION["csrf_registro"])) {
     );
 }
 
-$mensaje = $_GET["mensaje"] ?? "";
+$mensaje = is_string($_GET["mensaje"] ?? null) ? $_GET["mensaje"] : "";
 $tipo = $_GET["tipo"] ?? "";
+$titulo = "Crear una cuenta";
+$paginaPublica = true;
+require __DIR__ . "/includes/header.php";
 ?>
 
-<!DOCTYPE html>
-<html lang="es">
-
-<head>
-    <meta charset="UTF-8">
-
-    <meta
-        name="viewport"
-        content="width=device-width, initial-scale=1.0"
-    >
-
-    <title>Registro | Sistema de Gestión Académica</title>
-
-    <link
-        href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
-        rel="stylesheet"
-    >
-
-    <link
-        rel="stylesheet"
-        href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css"
-    >
-
-    <link
-        rel="stylesheet"
-        href="assets/css/estilos.css"
-    >
-</head>
-
-<body class="pagina-acceso">
-
-    <main class="contenedor-acceso">
+    <main id="contenido-principal" tabindex="-1" class="contenedor-acceso">
 
         <!-- Panel institucional -->
         <section class="panel-institucional">
@@ -57,14 +30,14 @@ $tipo = $_GET["tipo"] ?? "";
 
                 <div class="icono-institucional">
     <img
-        src="assets/img/logo-ies11.png"
+        src="<?= esc(url_app("assets/img/logo-ies11.png")) ?>"
         alt="Logo del Instituto de Educación Superior N.º 11"
         class="logo-ies"
     >
 </div>
 
                 <div>
-                    <h1>IES N.º 11</h1>
+                    <p class="marca-nombre">IES N.º 11</p>
                     <p>Sistema de Gestión Académica</p>
                 </div>
 
@@ -76,9 +49,9 @@ $tipo = $_GET["tipo"] ?? "";
                     Portal educativo
                 </span>
 
-                <h2>
+                <p class="titulo-institucional">
                     Una comunidad conectada con la educación
-                </h2>
+                </p>
 
                 <p>
                     Registrate para acceder a las herramientas
@@ -88,17 +61,17 @@ $tipo = $_GET["tipo"] ?? "";
                 <ul class="beneficios-acceso">
 
                     <li>
-                        <i class="bi bi-check-circle-fill"></i>
+                        <i class="bi bi-check-circle-fill" aria-hidden="true"></i>
                         Acceso personalizado
                     </li>
 
                     <li>
-                        <i class="bi bi-check-circle-fill"></i>
+                        <i class="bi bi-check-circle-fill" aria-hidden="true"></i>
                         Información académica protegida
                     </li>
 
                     <li>
-                        <i class="bi bi-check-circle-fill"></i>
+                        <i class="bi bi-check-circle-fill" aria-hidden="true"></i>
                         Gestión clara y organizada
                     </li>
 
@@ -109,27 +82,27 @@ $tipo = $_GET["tipo"] ?? "";
         </section>
 
         <!-- Panel del formulario -->
-        <section class="panel-acceso">
+        <div class="panel-acceso">
 
-            <div class="formulario-acceso">
+            <section class="formulario-acceso tarjeta-panel" aria-labelledby="titulo-acceso">
 
-                <a href="login.php" class="volver-acceso">
-                    <i class="bi bi-arrow-left"></i>
+                <a href="<?= esc(url_app("login.php")) ?>" class="volver-acceso">
+                    <i class="bi bi-arrow-left" aria-hidden="true"></i>
                     Volver a iniciar sesión
                 </a>
 
-                <div class="encabezado-formulario">
+                <header class="encabezado-formulario">
 
                     <span>NUEVO USUARIO</span>
 
-                    <h2>Crear una cuenta</h2>
+                    <h1 id="titulo-acceso">Crear una cuenta</h1>
 
                     <p>
                         Completá tus datos para registrarte
                         en el sistema.
                     </p>
 
-                </div>
+                </header>
 
                 <?php if ($mensaje !== ""): ?>
 
@@ -139,16 +112,15 @@ $tipo = $_GET["tipo"] ?? "";
                             : "alert-success" ?>"
                         role="alert"
                     >
-                        <?= htmlspecialchars($mensaje) ?>
+                        <?= esc($mensaje) ?>
                     </div>
 
                 <?php endif; ?>
 
                 <form
-                    action="procesar_registro.php"
+                    action="<?= esc(url_app("procesar_registro.php")) ?>"
                     method="POST"
                     id="formularioRegistro"
-                    novalidate
                 >
 
                 <input
@@ -170,7 +142,7 @@ $tipo = $_GET["tipo"] ?? "";
                         <div class="input-group">
 
                             <span class="input-group-text">
-                                <i class="bi bi-person"></i>
+                                <i class="bi bi-person" aria-hidden="true"></i>
                             </span>
 
                             <input
@@ -202,7 +174,7 @@ $tipo = $_GET["tipo"] ?? "";
                         <div class="input-group">
 
                             <span class="input-group-text">
-                                <i class="bi bi-envelope"></i>
+                                <i class="bi bi-envelope" aria-hidden="true"></i>
                             </span>
 
                             <input
@@ -263,7 +235,7 @@ $tipo = $_GET["tipo"] ?? "";
                             <div class="input-group">
 
                                 <span class="input-group-text">
-                                    <i class="bi bi-lock"></i>
+                                    <i class="bi bi-lock" aria-hidden="true"></i>
                                 </span>
 
                                 <input
@@ -282,9 +254,10 @@ $tipo = $_GET["tipo"] ?? "";
                                     type="button"
                                     class="btn btn-outline-secondary"
                                     id="mostrarPassword"
+                                    aria-controls="password"
                                     aria-label="Mostrar contraseña"
                                 >
-                                    <i class="bi bi-eye"></i>
+                                    <i class="bi bi-eye" aria-hidden="true"></i>
                                 </button>
 
                             </div>
@@ -303,7 +276,7 @@ $tipo = $_GET["tipo"] ?? "";
                             <div class="input-group">
 
                                 <span class="input-group-text">
-                                    <i class="bi bi-shield-check"></i>
+                                    <i class="bi bi-shield-check" aria-hidden="true"></i>
                                 </span>
 
                                 <input
@@ -349,53 +322,27 @@ $tipo = $_GET["tipo"] ?? "";
                         type="submit"
                         class="btn boton-principal w-100"
                     >
-                        <i class="bi bi-person-plus"></i>
+                        <i class="bi bi-person-plus" aria-hidden="true"></i>
                         Crear cuenta
                     </button>
 
                     <p class="enlace-alternativo">
                         ¿Ya tenés una cuenta?
 
-                        <a href="login.php">
+                        <a href="<?= esc(url_app("login.php")) ?>">
                             Iniciar sesión
                         </a>
                     </p>
 
                 </form>
 
-            </div>
+            </section>
 
-        </section>
+        </div>
 
     </main>
 
-    <script>
-        const botonMostrar =
-            document.getElementById("mostrarPassword");
-
-        const campoPassword =
-            document.getElementById("password");
-
-        botonMostrar.addEventListener("click", function () {
-
-            const esPassword =
-                campoPassword.type === "password";
-
-            campoPassword.type =
-                esPassword ? "text" : "password";
-
-            this.innerHTML = esPassword
-                ? '<i class="bi bi-eye-slash"></i>'
-                : '<i class="bi bi-eye"></i>';
-
-            this.setAttribute(
-                "aria-label",
-                esPassword
-                    ? "Ocultar contraseña"
-                    : "Mostrar contraseña"
-            );
-        });
-    </script>
+    <script src="<?= esc(url_app("assets/js/app.js")) ?>" defer></script>
 
 </body>
 </html>

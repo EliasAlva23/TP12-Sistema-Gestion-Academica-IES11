@@ -2,15 +2,6 @@
 
 require_once __DIR__ . "/includes/verificar_sesion.php";
 /* Permite el acceso a todos los usuarios autenticados */
-$rolesPermitidos = [
-    "Administrador",
-    "Docente",
-    "Alumno",
-    "Invitado"
-];
-
-require_once __DIR__ . "/includes/verificar_rol.php";
-
 $error = "";
 $exito = ($_GET["actualizada"] ?? "") === "1";
 
@@ -86,39 +77,35 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 
                 /* Protege la contraseña nueva */
                 $nuevoHash = password_hash(
-                    $nueva,
-                    PASSWORD_DEFAULT
+        $nueva,
+        PASSWORD_DEFAULT
                 );
 
                 /* Actualiza únicamente la cuenta autenticada */
                 $actualizar = $conexion->prepare(
-                    "UPDATE usuarios
+        "UPDATE usuarios
                      SET password = :password
                      WHERE id = :id
                        AND password = :hash_actual"
                 );
 
                 $actualizar->execute([
-                    ":password" => $nuevoHash,
-                    ":id" => $_SESSION["usuario_id"],
-                    ":hash_actual" => $hashActual
+        ":password" => $nuevoHash,
+        ":id" => $_SESSION["usuario_id"],
+        ":hash_actual" => $hashActual
                 ]);
 
                 if ($actualizar->rowCount() !== 1) {
 
-                    $error = "No se pudo actualizar la contraseña. "
+        $error = "No se pudo actualizar la contraseña. "
                            . "Intentá nuevamente.";
 
                 } else {
 
-                    /* Renueva la sesión después del cambio */
-                    session_regenerate_id(true);
+        /* Renueva la sesión después del cambio */
+        session_regenerate_id(true);
 
-                    header(
-                        "Location: " . BASE_URL .
-                        "/cambiar_contrasena.php?actualizada=1"
-                    );
-                    exit;
+        redirigir("cambiar_contrasena.php", ["actualizada" => 1], 303);
                 }
             }
 
@@ -133,163 +120,49 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
     }
 }
 
+$titulo = "Cambiar contraseña";
+$pagina = "contrasena";
+require __DIR__ . "/includes/header.php";
 ?>
-<!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport"
-          content="width=device-width, initial-scale=1.0">
 
-    <title>Cambiar contraseña | IES N.º 11</title>
+<main id="contenido-principal" tabindex="-1" class="pagina-contenido pagina-formulario-estrecha">
+    <header class="encabezado-pagina">
+        <h1>Cambiar contraseña</h1>
+        <p>Cuenta: <?= esc($_SESSION["usuario"]) ?></p>
+    </header>
+    <section class="tarjeta-panel" aria-label="Formulario de cambio de contraseña">
+        <?php if ($exito): ?>
+            <p class="alert alert-success" role="status">Tu contraseña se actualizó correctamente.</p>
+        <?php endif; ?>
+        <?php if ($error !== ""): ?>
+            <p class="alert alert-danger" role="alert"><?= esc($error) ?></p>
+        <?php endif; ?>
 
-    <link
-        href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
-        rel="stylesheet"
-    >
-
-    <link rel="stylesheet" href="assets/css/estilos.css">
-
-  
-<style>
-    /* Campos del formulario de cambio de contraseña */
-    .card-body input[type="password"] {
-        display: block;
-        width: 100%;
-        min-height: 42px;
-        padding: 10px 12px;
-        background-color: #ffffff !important;
-        color: #24344d !important;
-        border: 1px solid #b8c7da !important;
-        border-radius: 8px;
-        box-sizing: border-box;
-    }
-
-    .card-body input[type="password"]:focus {
-        border-color: #4774bf !important;
-        outline: 2px solid rgba(71, 116, 191, 0.15);
-    }
-</style>
-  
-</head>
-
-<body>
-
-<?php require __DIR__ . "/includes/navbar.php"; ?>
-
-<main class="container py-5">
-
-    <div class="row justify-content-center">
-
-        <div class="col-md-7 col-lg-5">
-
-            <div class="card shadow-sm border-0">
-
-                <div class="card-body p-4">
-
-                    <h1 class="h4 mb-3">
-                        Cambiar contraseña
-                    </h1>
-
-                    <p class="text-muted">
-                        Usuario:
-                        <strong>
-                            <?= esc($_SESSION["usuario"]) ?>
-                        </strong>
-                    </p>
-
-                    <?php if ($exito): ?>
-                        <div class="alert alert-success">
-                            Tu contraseña se actualizó correctamente.
-                        </div>
-                    <?php endif; ?>
-
-                    <?php if ($error !== ""): ?>
-                        <div class="alert alert-danger">
-                            <?= esc($error) ?>
-                        </div>
-                    <?php endif; ?>
-
-                    <form method="POST"
-                          action="<?= esc(BASE_URL) ?>/cambiar_contrasena.php">
-
-                        <?= csrf_campo() ?>
-
-                        <div class="mb-3">
-                            <label for="actual" class="form-label">
-                                Contraseña actual
-                            </label>
-
-                            <input
-                                type="password"
-                                class="form-control"
-                                id="actual"
-                                name="contrasena_actual"
-                                autocomplete="current-password"
-                                required
-                            >
-                        </div>
-
-                        <div class="mb-3">
-                            <label for="nueva" class="form-label">
-                                Nueva contraseña
-                            </label>
-
-                            <input
-                                type="password"
-                                class="form-control"
-                                id="nueva"
-                                name="contrasena_nueva"
-                                autocomplete="new-password"
-                                minlength="8"
-                                maxlength="72"
-                                required
-                            >
-
-                            <div class="form-text">
-                                Entre 8 y 72 caracteres, con letras y números.
-                            </div>
-                        </div>
-
-                        <div class="mb-4">
-                            <label for="confirmacion" class="form-label">
-                                Confirmar nueva contraseña
-                            </label>
-
-                            <input
-                                type="password"
-                                class="form-control"
-                                id="confirmacion"
-                                name="confirmar_contrasena"
-                                autocomplete="new-password"
-                                minlength="8"
-                                maxlength="72"
-                                required
-                            >
-                        </div>
-
-                        <button
-                            type="submit"
-                            class="btn btn-primary w-100"
-                        >
-                            Guardar nueva contraseña
-                        </button>
-
-                    </form>
-
-                    <a
-                        href="<?= esc(BASE_URL) ?>/dashboard.php"
-                        class="btn btn-outline-secondary w-100 mt-3"
-                    >
-                        Volver al panel
-                    </a>
-
-                </div>
+        <form method="post" action="<?= esc(url_app("cambiar_contrasena.php")) ?>">
+            <?= csrf_campo() ?>
+            <div class="mb-3">
+                <label for="actual" class="form-label">Contraseña actual</label>
+                <input type="password" class="form-control" id="actual" name="contrasena_actual"
+                       autocomplete="current-password" required>
             </div>
-
-        </div>
-    </div>
-
+            <div class="mb-3">
+                <label for="nueva" class="form-label">Nueva contraseña</label>
+                <input type="password" class="form-control" id="nueva" name="contrasena_nueva"
+                       autocomplete="new-password" minlength="8" maxlength="72"
+                       aria-describedby="requisitos-clave" required>
+                <p class="form-text" id="requisitos-clave">Entre 8 y 72 caracteres, con letras y números.</p>
+            </div>
+            <div class="mb-4">
+                <label for="confirmacion" class="form-label">Confirmar nueva contraseña</label>
+                <input type="password" class="form-control" id="confirmacion" name="confirmar_contrasena"
+                       autocomplete="new-password" minlength="8" maxlength="72" required>
+            </div>
+            <div class="acciones-formulario">
+                <a href="<?= esc(url_app("dashboard.php")) ?>" class="btn btn-outline-secondary">Volver a Inicio</a>
+                <button type="submit" class="btn boton-principal">Guardar nueva contraseña</button>
+            </div>
+        </form>
+    </section>
 </main>
 
 </body>

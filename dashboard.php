@@ -1,14 +1,6 @@
 <?php
 
 require_once __DIR__ . "/includes/verificar_sesion.php";
-require_once __DIR__ . "/config/conexion.php";
-
-if (!function_exists("esc")) {
-    function esc(mixed $valor): string {
-        return htmlspecialchars((string) $valor, ENT_QUOTES, "UTF-8");
-    }
-}
-
 /* ==================================================
    SESIÓN Y ROLES
 ================================================== */
@@ -17,19 +9,7 @@ $rol = $_SESSION["rol"] ?? "";
 $usuarioSesion = $_SESSION["usuario"] ?? "";
 $emailSesion = $_SESSION["email"] ?? "";
 
-$rolesPermitidos = [
-    "Administrador",
-    "Docente",
-    "Alumno",
-    "Invitado"
-];
-
-if (!in_array($rol, $rolesPermitidos, true)) {
-    header("Location: logout.php");
-    exit;
-}
-
-$mensaje = $_GET["mensaje"] ?? "";
+$mensaje = is_string($_GET["mensaje"] ?? null) ? $_GET["mensaje"] : "";
 $tipo = $_GET["tipo"] ?? "";
 
 $descripciones = [
@@ -38,14 +18,6 @@ $descripciones = [
     "Alumno" => "Podés consultar tu información académica personal.",
     "Invitado" => "Tenés acceso limitado a la información general del sistema."
 ];
-
-$panelesRol = [
-    "Administrador" => "roles/administrador.php",
-    "Docente" => "roles/docente.php",
-    "Alumno" => "roles/alumno.php",
-    "Invitado" => "roles/invitado.php"
-];
-
 
 /* ==================================================
    ACCESOS SEGÚN ROL
@@ -56,7 +28,7 @@ $accesos = [
         "icono" => "bi-person-workspace",
         "titulo" => "Mi panel",
         "texto" => "Accedé a las funciones específicas de tu perfil.",
-        "enlace" => $panelesRol[$rol]
+        "enlace" => PANELES_POR_ROL[$rol]
     ]
 ];
 
@@ -119,11 +91,7 @@ if ($rol === "Alumno") {
    ESTADÍSTICAS
 ================================================== */
 
-$puedeVerEstadisticas = in_array(
-    $rol,
-    ["Administrador", "Docente"],
-    true
-);
+$puedeVerEstadisticas = puede_acceder("alumnos", $rol);
 
 $totalAlumnos = null;
 $totalUsuarios = null;
@@ -221,272 +189,74 @@ if ($puedeVerEstadisticas) {
     }
 }
 
+$puedeVerAvisos = puede_acceder("notificaciones", $rol);
+$avisosRecientes = [];
+if ($puedeVerAvisos) {
+    require_once __DIR__ . "/includes/avisos.php";
+
+    try {
+        $avisosRecientes = avisos_visibles($conexion, (int) $_SESSION["usuario_id"], $rol, true);
+    } catch (PDOException $error) {
+        error_log("Avisos de Inicio: " . $error->getMessage());
+    }
+}
+
+$mostrarEstadisticas = $puedeVerEstadisticas && $totalAlumnos !== null;
+$titulo = "Inicio";
+$pagina = "inicio";
+require __DIR__ . "/includes/header.php";
 ?>
 
-<!DOCTYPE html>
-<html lang="es">
-
-<head>
-    <meta charset="UTF-8">
-    <meta
-        name="viewport"
-        content="width=device-width, initial-scale=1.0"
-    >
-
-    <title>Dashboard académico | IES N.º 11</title>
-
-    <link
-        href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
-        rel="stylesheet"
-    >
-
-    <link
-        href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css"
-        rel="stylesheet"
-    >
-
-    <link
-        rel="stylesheet"
-        href="assets/css/estilos.css"
-    >
-
-    <style>
-        body {
-            background: #f4f7fb;
-        }
-
-        .dashboard-contenedor {
-            max-width: 1400px;
-            margin: auto;
-        }
-
-        .dashboard-cabecera {
-            background: linear-gradient(135deg, #253e66, #4774bf);
-            color: #fff;
-            padding: 2rem 0;
-        }
-
-        .dashboard-cabecera h1 {
-            font-weight: 700;
-        }
-
-        .dashboard-panel,
-        .metrica-dashboard,
-        .acceso-dashboard {
-            background: #fff;
-            border: 1px solid #dfe7f1;
-            border-radius: 14px;
-            box-shadow: 0 5px 18px rgba(20, 50, 90, .05);
-        }
-
-        .dashboard-panel {
-            padding: 1.25rem;
-        }
-
-        .dashboard-panel h2 {
-            color: #253e66;
-            font-size: 1.1rem;
-            font-weight: 700;
-        }
-
-        .dashboard-accesos {
-            display: grid;
-            grid-template-columns:
-                repeat(auto-fit, minmax(210px, 1fr));
-            gap: 1rem;
-            margin-bottom: 2rem;
-        }
-
-        .acceso-dashboard {
-            display: block;
-            padding: 1.25rem;
-            color: inherit;
-            text-decoration: none;
-            transition: .2s ease;
-        }
-
-        .acceso-dashboard:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 8px 24px rgba(20, 50, 90, .1);
-        }
-
-        .acceso-dashboard i {
-            color: #4774bf;
-            font-size: 1.6rem;
-        }
-
-        .acceso-dashboard h3 {
-            margin-top: .8rem;
-            font-size: 1rem;
-            color: #253e66;
-        }
-
-        .acceso-dashboard p {
-            margin: 0;
-            color: #687992;
-            font-size: .9rem;
-        }
-
-        .dashboard-metricas {
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 1rem;
-            margin-bottom: 2rem;
-        }
-
-        .metrica-dashboard {
-            padding: 1.25rem;
-        }
-
-        .metrica-dashboard i {
-            color: #4774bf;
-            font-size: 1.5rem;
-        }
-
-        .metrica-dashboard strong {
-            display: block;
-            margin-top: .5rem;
-            font-size: 1.8rem;
-            color: #253e66;
-        }
-
-        .metrica-dashboard span {
-            color: #687992;
-        }
-
-        .dashboard-grid {
-            display: grid;
-            grid-template-columns: minmax(0, 2fr) minmax(280px, 1fr);
-            gap: 1rem;
-            margin-bottom: 2rem;
-        }
-
-        .dashboard-grafico {
-            position: relative;
-            height: 300px;
-        }
-
-        .panel-notificaciones {
-            position: absolute;
-            top: 55px;
-            right: 0;
-            width: min(360px, 90vw);
-            padding: 1rem;
-            background: #fff;
-            color: #253e66;
-            border-radius: 12px;
-            box-shadow: 0 12px 30px rgba(0, 0, 0, .18);
-            z-index: 2000;
-        }
-
-        @media (max-width: 992px) {
-            .dashboard-metricas {
-                grid-template-columns: repeat(2, 1fr);
-            }
-
-            .dashboard-grid {
-                grid-template-columns: 1fr;
-            }
-        }
-
-        @media (max-width: 576px) {
-            .dashboard-metricas {
-                grid-template-columns: 1fr;
-            }
-        }
-    </style>
-</head>
-
-<body>
-
-<?php require __DIR__ . "/includes/navbar.php"; ?>
-
-<header class="dashboard-cabecera">
-    <div class="container dashboard-contenedor">
+<main id="contenido-principal" tabindex="-1" class="pagina-contenido">
+<header class="encabezado-pagina dashboard-cabecera">
+    <div>
 
         <div class="d-flex justify-content-between align-items-center gap-3">
 
             <div>
-                <small class="text-uppercase">
-                    Sistema de Gestión Académica
-                </small>
-
                 <h1 class="mt-1 mb-1">
                     Hola, <?= esc($usuarioSesion) ?>
                 </h1>
 
-                <p class="mb-0">
-                    Sesión iniciada como
-                    <strong><?= esc($rol) ?></strong>
-                </p>
+                <p><span class="insignia-rol insignia-<?= esc(strtolower($rol)) ?>"><?= esc($rol) ?></span></p>
             </div>
 
 
-            <!-- CAMPANA DE NOTIFICACIONES -->
-
-            <div class="position-relative">
-
-                <button
-                    type="button"
-                    id="botonNotificaciones"
-                    class="btn btn-light position-relative"
-                    aria-label="Ver notificaciones"
-                >
-                    <i class="bi bi-bell"></i>
-
-                    <span
-                        id="contadorNotificaciones"
-                        class="
-                            position-absolute
-                            top-0
-                            start-100
-                            translate-middle
-                            badge
-                            rounded-pill
-                            bg-danger
-                            d-none
-                        "
-                    >
-                        0
-                    </span>
-                </button>
-
-
-                <div
-                    id="panelNotificaciones"
-                    class="panel-notificaciones d-none"
-                >
-
-                    <div
-                        class="
-                            d-flex
-                            justify-content-between
-                            mb-3
-                        "
-                    >
-                        <strong>Notificaciones</strong>
-
-                        <a href="notificaciones.php">
-                            Ver todas
-                        </a>
+            <?php if ($puedeVerAvisos): ?>
+                <div class="dropdown" id="campanaAvisos"
+                     data-avisos-url="<?= esc(url_app("notificaciones.php", ["formato" => "json"])) ?>">
+                    <button type="button" class="btn btn-light position-relative" data-bs-toggle="dropdown"
+                            aria-label="Ver notificaciones" aria-expanded="false">
+                        <i class="bi bi-bell" aria-hidden="true"></i>
+                        <span id="contadorNotificaciones" class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" aria-live="polite"
+                              <?= $avisosRecientes ? "" : "hidden" ?>><?= count($avisosRecientes) > 5 ? "5+" : count($avisosRecientes) ?></span>
+                    </button>
+                    <div class="dropdown-menu dropdown-menu-end dashboard-avisos p-3">
+                        <div class="d-flex flex-wrap justify-content-between gap-2 mb-3">
+                            <strong>Notificaciones</strong>
+                            <a href="<?= esc(url_app("notificaciones.php")) ?>">Ver todas</a>
+                        </div>
+                        <div id="listaNotificaciones">
+                            <?php if (!$avisosRecientes): ?>
+                                <p class="text-muted mb-0">Sin notificaciones nuevas.</p>
+                            <?php endif; ?>
+                            <?php foreach (array_slice($avisosRecientes, 0, 5) as $aviso): ?>
+                                <div class="notificacion-item">
+                                    <strong><?= esc($aviso["titulo"]) ?></strong>
+                                    <p><?= esc($aviso["mensaje"]) ?></p>
+                                </div>
+                            <?php endforeach; ?>
+                        </div>
                     </div>
-
-                    <div id="listaNotificaciones">
-                        <p class="text-muted mb-0">
-                            Sin notificaciones nuevas
-                        </p>
-                    </div>
-
                 </div>
-
-            </div>
+            <?php endif; ?>
 
         </div>
     </div>
 </header>
 
 
-<main class="container dashboard-contenedor py-4">
+
 
     <?php if ($mensaje !== ""): ?>
 
@@ -506,58 +276,70 @@ if ($puedeVerEstadisticas) {
 
     <!-- PERFIL -->
 
-    <section class="dashboard-panel mb-4">
+    <?php if ($errorEstadisticas): ?>
 
-        <h2>
-            Tu perfil: <?= esc($rol) ?>
-        </h2>
-
-        <p>
-            <?= esc($descripciones[$rol] ?? "") ?>
-        </p>
-
-        <div class="row g-3">
-
-            <div class="col-12 col-md-4">
-                <small class="text-muted">Usuario</small>
-                <div>
-                    <strong><?= esc($usuarioSesion) ?></strong>
-                </div>
-            </div>
-
-            <div class="col-12 col-md-4">
-                <small class="text-muted">Correo</small>
-                <div>
-                    <strong><?= esc($emailSesion) ?></strong>
-                </div>
-            </div>
-
-            <div class="col-12 col-md-4">
-                <small class="text-muted">Rol</small>
-                <div>
-                    <strong><?= esc($rol) ?></strong>
-                </div>
-            </div>
-
+        <div class="alert alert-warning">
+            Algunas estadísticas no pudieron cargarse.
         </div>
-    </section>
 
+    <?php endif; ?>
+
+
+    <?php if ($mostrarEstadisticas): ?>
+
+
+        <!-- MÉTRICAS -->
+
+        <section class="rejilla-metricas mb-4">
+
+            <div class="tarjeta-metrica">
+                <i class="bi bi-mortarboard" aria-hidden="true"></i>
+                <strong class="valor"><?= $totalAlumnos ?></strong>
+                <span class="etiqueta">Alumnos registrados</span>
+            </div>
+
+            <div class="tarjeta-metrica">
+                <i class="bi bi-calendar-check" aria-hidden="true"></i>
+                <strong class="valor"><?= $altasRecientes ?></strong>
+                <span class="etiqueta">Altas últimos 7 días</span>
+            </div>
+
+
+            <?php if ($rol === "Administrador"): ?>
+
+                <div class="tarjeta-metrica">
+                    <i class="bi bi-people" aria-hidden="true"></i>
+                    <strong class="valor"><?= $totalUsuarios ?></strong>
+                    <span class="etiqueta">Usuarios</span>
+                </div>
+
+                <div class="tarjeta-metrica">
+                    <i class="bi bi-person-video3" aria-hidden="true"></i>
+                    <strong class="valor"><?= $totalDocentes ?></strong>
+                    <span class="etiqueta">Docentes</span>
+                </div>
+
+            <?php endif; ?>
+
+        </section>
+
+    <?php endif; ?>
 
     <!-- ACCESOS -->
 
     <section class="mb-4">
 
-        <h2 class="h5 mb-3">
+        <h2 class="titulo-seccion mb-3">
             Accesos disponibles
         </h2>
 
-        <div class="dashboard-accesos">
+        <div class="rejilla-accesos">
 
             <?php foreach ($accesos as $acceso): ?>
 
                 <a
-                    href="<?= esc($acceso["enlace"]) ?>"
-                    class="acceso-dashboard"
+                    href="<?= esc(url_app($acceso["enlace"])) ?>"
+                    class="tarjeta-acceso"
                 >
                     <i
                         class="bi <?= esc($acceso["icono"]) ?>"
@@ -579,121 +361,48 @@ if ($puedeVerEstadisticas) {
     </section>
 
 
-    <?php if ($errorEstadisticas): ?>
-
-        <div class="alert alert-warning">
-            Algunas estadísticas no pudieron cargarse.
-        </div>
-
-    <?php endif; ?>
-
-
-    <?php if (
-        $puedeVerEstadisticas &&
-        $totalAlumnos !== null
-    ): ?>
-
-
-        <!-- MÉTRICAS -->
-
-        <section class="dashboard-metricas">
-
-            <div class="metrica-dashboard">
-                <i class="bi bi-mortarboard"></i>
-                <strong><?= $totalAlumnos ?></strong>
-                <span>Alumnos registrados</span>
-            </div>
-
-            <div class="metrica-dashboard">
-                <i class="bi bi-calendar-check"></i>
-                <strong><?= $altasRecientes ?></strong>
-                <span>Altas últimos 7 días</span>
-            </div>
-
-
-            <?php if ($rol === "Administrador"): ?>
-
-                <div class="metrica-dashboard">
-                    <i class="bi bi-people"></i>
-                    <strong><?= $totalUsuarios ?></strong>
-                    <span>Usuarios</span>
-                </div>
-
-                <div class="metrica-dashboard">
-                    <i class="bi bi-person-video3"></i>
-                    <strong><?= $totalDocentes ?></strong>
-                    <span>Docentes</span>
-                </div>
-
-            <?php endif; ?>
-
-        </section>
-
-
+    <?php if ($mostrarEstadisticas): ?>
         <!-- GRÁFICOS -->
 
-        <section class="dashboard-grid">
-
-            <div class="dashboard-panel">
-
-                <h2>
-                    Altas de alumnos — últimos 7 días
-                </h2>
-
-                <div class="dashboard-grafico">
-                    <canvas id="graficoAltas"></canvas>
-                </div>
-
-            </div>
-
+        <div class="rejilla-graficos mb-4">
+            <?php
+            $idGrafico = "graficoAltas";
+            $tituloGrafico = "Altas de alumnos · últimos 7 días";
+            $tipoGrafico = "line";
+            $etiquetasGrafico = array_column($datosAltas, "etiqueta");
+            $valoresGrafico = array_column($datosAltas, "cantidad");
+            require __DIR__ . "/includes/grafico.php";
+            ?>
 
             <?php if ($rol === "Administrador"): ?>
-
-                <div class="dashboard-panel">
-
-                    <h2>
-                        Usuarios por rol
-                    </h2>
-
-                    <div class="dashboard-grafico">
-                        <canvas id="graficoRoles"></canvas>
-                    </div>
-
-                </div>
-
-            <?php else: ?>
-
-                <div class="dashboard-panel">
-                    <h2>Panel docente</h2>
-
-                    <p>
-                        Podés consultar información académica
-                        y el listado de alumnos.
-                    </p>
-                </div>
-
+                <?php
+            $idGrafico = "graficoRoles";
+            $tituloGrafico = "Usuarios por rol";
+            $tipoGrafico = "doughnut";
+            $etiquetasGrafico = array_column($datosRoles, "etiqueta");
+            $valoresGrafico = array_column($datosRoles, "cantidad");
+            require __DIR__ . "/includes/grafico.php";
+            ?>
             <?php endif; ?>
-
-        </section>
-
+        </div>
 
         <!-- ÚLTIMOS ALUMNOS -->
 
-        <section class="dashboard-panel mb-4">
+        <section class="tarjeta-panel mb-4">
 
             <h2>
                 Últimos alumnos registrados
             </h2>
 
-            <div class="table-responsive">
+            <div class="table-responsive" tabindex="0" role="region" aria-label="Últimos alumnos registrados">
 
-                <table class="table table-hover align-middle">
+                <table class="table table-hover tabla-datos tabla-registros">
 
                     <thead>
                         <tr>
-                            <th>Alumno</th>
-                            <th>Correo</th>
-                            <th>Fecha</th>
+                            <th scope="col">Alumno</th>
+                            <th scope="col">Correo</th>
+                            <th scope="col">Fecha</th>
                         </tr>
                     </thead>
 
@@ -740,12 +449,25 @@ if ($puedeVerEstadisticas) {
 
     <?php endif; ?>
 
+
+    <section class="tarjeta-panel">
+
+        <h2>
+            Tu perfil: <?= esc($rol) ?>
+        </h2>
+
+        <p>
+            <?= esc($descripciones[$rol] ?? "") ?>
+        </p>
+
+        <dl class="datos-cuenta mb-0">
+            <div><dt>Usuario</dt><dd><?= esc($usuarioSesion) ?></dd></div>
+            <div><dt>Correo</dt><dd><?= esc($emailSesion) ?></dd></div>
+        </dl>
+    </section>
+
+
 </main>
-
-
-<script
-    src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
-></script>
 
 
 <?php if (
@@ -753,121 +475,15 @@ if ($puedeVerEstadisticas) {
     !$errorEstadisticas
 ): ?>
 
-<script
-    src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"
-></script>
-
-<script>
-document.addEventListener("DOMContentLoaded", () => {
-
-    const altas = <?= json_encode(
-        $datosAltas,
-        JSON_UNESCAPED_UNICODE
-    ) ?>;
-
-    const roles = <?= json_encode(
-        $datosRoles,
-        JSON_UNESCAPED_UNICODE
-    ) ?>;
-
-
-    const canvasAltas =
-        document.getElementById("graficoAltas");
-
-    if (canvasAltas && typeof Chart !== "undefined") {
-
-        new Chart(canvasAltas, {
-            type: "line",
-
-            data: {
-                labels: altas.map(item => item.etiqueta),
-
-                datasets: [{
-                    data: altas.map(item => Number(item.cantidad)),
-                    borderColor: "#4774bf",
-                    backgroundColor: "rgba(71,116,191,.15)",
-                    borderWidth: 3,
-                    pointRadius: 5,
-                    tension: .35,
-                    fill: true
-                }]
-            },
-
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-
-                plugins: {
-                    legend: {
-                        display: false
-                    }
-                },
-
-                scales: {
-                    y: {
-                        beginAtZero: true,
-                        ticks: {
-                            precision: 0,
-                            stepSize: 1
-                        }
-                    }
-                }
-            }
-        });
-    }
-
-
-    const canvasRoles =
-        document.getElementById("graficoRoles");
-
-    if (
-        canvasRoles &&
-        roles.length &&
-        typeof Chart !== "undefined"
-    ) {
-
-        new Chart(canvasRoles, {
-            type: "doughnut",
-
-            data: {
-                labels: roles.map(item => item.etiqueta),
-
-                datasets: [{
-                    data: roles.map(item => Number(item.cantidad)),
-
-                    backgroundColor: [
-                        "#253e66",
-                        "#4774bf",
-                        "#38a4b8",
-                        "#e8a72f"
-                    ],
-
-                    borderColor: "#fff",
-                    borderWidth: 3
-                }]
-            },
-
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                cutout: "62%",
-
-                plugins: {
-                    legend: {
-                        position: "bottom"
-                    }
-                }
-            }
-        });
-    }
-
-});
-</script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js" defer></script>
+<script src="<?= esc(url_app("assets/js/charts.js")) ?>" defer></script>
 
 <?php endif; ?>
 
 
-<script src="assets/js/notificaciones.js"></script>
+<?php if ($puedeVerAvisos): ?>
+    <script src="<?= esc(url_app("assets/js/notificaciones.js")) ?>"></script>
+<?php endif; ?>
 
 </body>
 </html>

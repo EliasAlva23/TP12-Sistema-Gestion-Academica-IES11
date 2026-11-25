@@ -1,10 +1,15 @@
 <?php
 
+if (PHP_SAPI !== "cli") {
+    http_response_code(404);
+    exit;
+}
+
 require_once __DIR__ . "/../config/conexion.php";
 
 set_time_limit(0);
 
-$direccion = "0.0.0.0";
+$direccion = "127.0.0.1";
 $puerto = (int) (getenv("PORT") ?: 8080);
 
 $servidor = stream_socket_server(
@@ -220,49 +225,12 @@ while (true) {
        BUSCAR NUEVAS NOTIFICACIONES
     ============================================== */
 
-    $consulta =
-        $conexion->prepare(
-            "SELECT
-                id,
-                tipo,
-                titulo,
-                mensaje,
-                usuario_id,
-                rol_destino,
-                leida,
-                fecha_creacion
-             FROM notificaciones
-             WHERE id > :ultimo_id
-             ORDER BY id ASC"
-        );
+    $nuevoId = (int) $conexion->query("SELECT COALESCE(MAX(id), 0) FROM notificaciones")->fetchColumn();
 
-    $consulta->execute([
-        ":ultimo_id" => $ultimoId
-    ]);
-
-    $nuevas =
-        $consulta->fetchAll();
-
-
-    foreach (
-        $nuevas
-        as $notificacion
-    ) {
-
-        $ultimoId =
-            max(
-                $ultimoId,
-                (int) $notificacion["id"]
-            );
-
-        $json =
-            json_encode(
-                $notificacion,
-                JSON_UNESCAPED_UNICODE
-            );
-
-        $frame =
-            crearFrame($json);
+    if ($nuevoId !== $ultimoId) {
+        $ultimoId = $nuevoId;
+        // El navegador recupera los avisos autorizados por HTTP con su sesión.
+        $frame = crearFrame("actualizar");
 
         foreach (
             $clientes
@@ -295,10 +263,6 @@ while (true) {
             );
         }
 
-        echo
-            "Notificación enviada: "
-            . $notificacion["titulo"]
-            . PHP_EOL;
     }
 
 

@@ -1,70 +1,32 @@
 <?php
-require_once __DIR__ . "/includes/verificar_sesion.php";
 
-require_once "config/conexion.php";
+$formatoJson = ($_GET["formato"] ?? "") === "json";
+$respuestaJson = $formatoJson;
+$seccionRequerida = "notificaciones";
+require_once __DIR__ . "/includes/verificar_rol.php";
 
 $titulo = "Notificaciones";
 $pagina = "notificaciones";
 
 
-$consulta =
-    $conexion->query(
-        "SELECT
-            id,
-            tipo,
-            titulo,
-            mensaje,
-            rol_destino,
-            leida,
-            fecha_creacion
-         FROM notificaciones
-         ORDER BY
-            fecha_creacion DESC,
-            id DESC"
-    );
+require_once __DIR__ . "/includes/avisos.php";
 
+$notificaciones = avisos_visibles($conexion, (int) $_SESSION["usuario_id"], $_SESSION["rol"], $formatoJson);
+if ($formatoJson) {
+    header("Content-Type: application/json; charset=utf-8");
+    echo json_encode($notificaciones, JSON_UNESCAPED_UNICODE | JSON_INVALID_UTF8_SUBSTITUTE);
+    exit;
+}
 
-$notificaciones =
-    $consulta->fetchAll();
-
-
-include "includes/header.php";
-include "includes/sidebar.php";
+require __DIR__ . "/includes/header.php";
 
 ?>
 
-<div class="contenido flex-grow-1">
-
-    <div class="barra-superior">
-
-        <button
-            class="btn d-lg-none"
-            id="botonMenu"
-            aria-label="Abrir menú"
-        >
-            <i class="bi bi-list fs-4"></i>
-        </button>
-
-
-        <h1 class="titulo-pagina">
-
-            Notificaciones
-
-        </h1>
-
-
-        <span>
-
-            <i class="bi bi-bell"></i>
-
-            IES N.º 11
-
-        </span>
-
-    </div>
-
-
-    <main class="p-3 p-md-4">
+<main id="contenido-principal" tabindex="-1" class="pagina-contenido">
+    <header class="encabezado-pagina">
+        <h1><?= esc($titulo) ?></h1>
+        <p>Consultá los avisos disponibles para tu cuenta.</p>
+    </header>
 
         <div class="tarjeta-panel">
 
@@ -108,7 +70,7 @@ include "includes/sidebar.php";
 
                     <strong>
 
-                        <?= e(
+                        <?= esc(
                             $notificacion[
                                 "titulo"
                             ]
@@ -119,7 +81,7 @@ include "includes/sidebar.php";
 
                     <p>
 
-                        <?= e(
+                        <?= esc(
                             $notificacion[
                                 "mensaje"
                             ]
@@ -128,7 +90,7 @@ include "includes/sidebar.php";
                     </p>
 
 
-                    <small>
+                    <time datetime="<?= esc(date(DATE_ATOM, strtotime($notificacion["fecha_creacion"]))) ?>">
 
                         <?= date(
                             "d/m/Y H:i",
@@ -139,7 +101,7 @@ include "includes/sidebar.php";
                             )
                         ) ?>
 
-                    </small>
+                    </time>
 
                 </div>
 
@@ -148,24 +110,6 @@ include "includes/sidebar.php";
         </div>
 
     </main>
-
-</div>
-
-
-</div>
-
-
-<script
-    src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
-></script>
-
-<script
-    src="assets/js/scripts.js"
-></script>
-
-<script
-    src="assets/js/notificaciones.js"
-></script>
 
 </body>
 

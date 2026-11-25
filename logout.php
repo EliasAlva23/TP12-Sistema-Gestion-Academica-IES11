@@ -1,16 +1,16 @@
 <?php
-/*
- * logout.php
- * Cierra la sesión del usuario de forma completa:
- * vacía los datos, elimina la cookie y destruye la sesión.
- */
 
+require_once __DIR__ . "/includes/app.php";
 
-session_start();
+if ($_SERVER["REQUEST_METHOD"] !== "POST") {
+    header("Allow: POST");
+    error_acceso(405, "Para cerrar sesión usá el botón Salir.");
+}
 
-$_SESSION = [];
+iniciar_sesion();
+if (!csrf_validar($_POST["csrf"] ?? null)) {
+    error_acceso(403, "La solicitud para cerrar sesión no es válida.");
+}
 
-session_destroy();
-
-header("Location: login.php");
-exit;
+cerrar_sesion();
+redirigir("login.php", [], 303);

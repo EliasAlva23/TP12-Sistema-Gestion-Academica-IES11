@@ -1,10 +1,7 @@
 <?php
 
-require_once __DIR__ . "/includes/verificar_sesion.php";
-
-$rolesPermitidos = ["Administrador"];
+$seccionRequerida = "crud_alumnos";
 require_once __DIR__ . "/includes/verificar_rol.php";
-require_once "conexion.php";
 
 /* Procesa la eliminación confirmada */
 if ($_SERVER["REQUEST_METHOD"] === "POST") {
@@ -31,8 +28,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
     );
 
     if (!$id || $id < 1) {
-        header("Location: index.php?mensaje=no_encontrado");
-        exit;
+        redirigir("alumnos.php", ["mensaje" => "no_encontrado"], 303);
     }
 
     try {
@@ -47,21 +43,14 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
         ]);
 
         if ($consulta->rowCount() === 0) {
-            header(
-                "Location: index.php?mensaje=no_encontrado"
-            );
-            exit;
+            redirigir("alumnos.php", ["mensaje" => "no_encontrado"], 303);
         }
 
-        header("Location: index.php?mensaje=eliminado");
-        exit;
+        redirigir("alumnos.php", ["mensaje" => "eliminado"], 303);
 
     } catch (PDOException $error) {
 
-        header(
-            "Location: index.php?mensaje=error_eliminar"
-        );
-        exit;
+        redirigir("alumnos.php", ["mensaje" => "error_eliminar"], 303);
     }
 }
 
@@ -73,8 +62,7 @@ $id = filter_input(
 );
 
 if (!$id || $id < 1) {
-    header("Location: index.php?mensaje=no_encontrado");
-    exit;
+    redirigir("alumnos.php", ["mensaje" => "no_encontrado"], 303);
 }
 
 $consulta = $conexion->prepare(
@@ -90,72 +78,27 @@ $consulta->execute([
 $alumno = $consulta->fetch();
 
 if (!$alumno) {
-    header("Location: index.php?mensaje=no_encontrado");
-    exit;
+    redirigir("alumnos.php", ["mensaje" => "no_encontrado"], 303);
 }
 
+$titulo = "Eliminar alumno";
+$pagina = "alumnos";
+require __DIR__ . "/includes/header.php";
 ?>
 
-<!DOCTYPE html>
-<html lang="es">
 
-<head>
-    <meta charset="UTF-8">
-
-    <meta
-        name="viewport"
-        content="width=device-width, initial-scale=1.0"
-    >
-
-    <title>Eliminar alumno</title>
-
-    <link
-        href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
-        rel="stylesheet"
-    >
-
-    <link
-        href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css"
-        rel="stylesheet"
-    >
-
-    <link
-        rel="stylesheet"
-        href="assets/css/estilos.css"
-    >
-</head>
-
-<body>
-
-    <?php require __DIR__ . "/includes/navbar.php"; ?>
-
-
-    <header class="encabezado">
-        <div class="container py-4">
-
-            <p class="etiqueta mb-2">
-                Gestión académica
-            </p>
-
-            <h1 class="mb-1">
-                Eliminar alumno
-            </h1>
-
-            <p class="mb-0">
-                Confirmá la eliminación del registro.
-            </p>
-
-        </div>
+    <main id="contenido-principal" tabindex="-1" class="pagina-contenido pagina-formulario">
+    <header class="encabezado-pagina">
+        <h1>Eliminar alumno</h1>
+        <p>Revisá el legajo antes de confirmar la baja.</p>
     </header>
 
-    <main class="container py-5">
-
-        <section class="tarjeta-formulario">
+        <section class="tarjeta-panel">
 
             <div class="alert alert-danger" role="alert">
 
                 <h2 class="h5">
-                    <i class="bi bi-exclamation-triangle-fill"></i>
+                    <i class="bi bi-exclamation-triangle-fill" aria-hidden="true"></i>
                     ¿Deseás eliminar este alumno?
                 </h2>
 
@@ -166,7 +109,7 @@ if (!$alumno) {
 
             </div>
 
-            <div class="p-4 my-4 bg-light rounded-3">
+            <div class="p-3 my-4 bg-body-tertiary rounded-3">
 
                 <p>
                     <strong>Nombre:</strong>
@@ -185,7 +128,7 @@ if (!$alumno) {
 
             </div>
 
-            <form method="POST" action="eliminar.php">
+            <form method="POST" action="<?= esc(url_app("eliminar.php")) ?>">
 
                 <input
                     type="hidden"
@@ -198,8 +141,8 @@ if (!$alumno) {
                 <div class="acciones-formulario">
 
                     <a
-                        href="index.php"
-                        class="btn boton-secundario"
+                        href="<?= esc(url_app("alumnos.php")) ?>"
+                        class="btn btn-outline-secondary"
                     >
                         Cancelar
                     </a>
@@ -208,7 +151,7 @@ if (!$alumno) {
                         type="submit"
                         class="btn btn-danger"
                     >
-                        <i class="bi bi-trash3-fill"></i>
+                        <i class="bi bi-trash3-fill" aria-hidden="true"></i>
                         Sí, eliminar alumno
                     </button>
 

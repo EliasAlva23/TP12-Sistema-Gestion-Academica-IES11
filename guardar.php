@@ -1,15 +1,11 @@
 <?php
 
-require_once __DIR__ . "/includes/verificar_sesion.php";
-
-$rolesPermitidos = ["Administrador"];
+$seccionRequerida = "crud_alumnos";
 require_once __DIR__ . "/includes/verificar_rol.php";
-require_once "conexion.php";
 
 /* Solo permite solicitudes enviadas desde el formulario */
 if ($_SERVER["REQUEST_METHOD"] !== "POST") {
-    header("Location: index.php");
-    exit;
+    redirigir("alumnos.php");
 }
 
 /* Verifica el token de seguridad CSRF */
@@ -28,9 +24,9 @@ if (
 }
 
 /* Recibe y limpia los datos */
-$nombre = trim($_POST["nombre"] ?? "");
-$apellido = trim($_POST["apellido"] ?? "");
-$email = trim($_POST["email"] ?? "");
+$nombre = trim(is_string($_POST["nombre"] ?? null) ? $_POST["nombre"] : "");
+$apellido = trim(is_string($_POST["apellido"] ?? null) ? $_POST["apellido"] : "");
+$email = trim(is_string($_POST["email"] ?? null) ? $_POST["email"] : "");
 
 /* Convierte nombre y apellido a formato correcto */
 $nombre = mb_convert_case(
@@ -49,7 +45,7 @@ $email = strtolower($email);
 
 
 /* Recibe la cuenta seleccionada para vincular */
-$usuarioId = trim((string) ($_POST["usuario_id"] ?? ""));
+$usuarioId = trim(is_string($_POST["usuario_id"] ?? null) ? $_POST["usuario_id"] : "");
 
 
 /* Validaciones del servidor */
@@ -58,8 +54,7 @@ if (
     $apellido === "" ||
     $email === ""
 ) {
-    header("Location: agregar.php?error=campos");
-    exit;
+    redirigir("agregar.php", ["error" => "campos"], 303);
 }
 
 if (
@@ -68,8 +63,7 @@ if (
     mb_strlen($apellido) < 2 ||
     mb_strlen($apellido) > 60
 ) {
-    header("Location: agregar.php?error=longitud");
-    exit;
+    redirigir("agregar.php", ["error" => "longitud"], 303);
 }
 
 if (
@@ -82,18 +76,13 @@ if (
         $apellido
     )
 ) {
-    header("Location: agregar.php?error=nombre");
-    exit;
+    redirigir("agregar.php", ["error" => "nombre"], 303);
 }
 
 if (
-    !filter_var(
-        $email,
-        FILTER_VALIDATE_EMAIL
-    )
+    strlen($email) > 100 || !filter_var($email, FILTER_VALIDATE_EMAIL)
 ) {
-    header("Location: agregar.php?error=email");
-    exit;
+    redirigir("agregar.php", ["error" => "email"], 303);
 }
 
 
@@ -105,68 +94,53 @@ if (
         (int) $usuarioId <= 0
     )
 ) {
-    header("Location: agregar.php?error=cuenta");
-    exit;
+    redirigir("agregar.php", ["error" => "cuenta"], 303);
 }
 
 try {
+    if ($usuarioId !== "") {
+        $conexion->beginTransaction();
 
+        $consultaCuenta = $conexion->prepare(
+            "SELECT email FROM usuarios WHERE id = :id AND rol = 'Alumno' FOR UPDATE"
+        );
+        $consultaCuenta->execute([":id" => (int) $usuarioId]);
+        $correoCuenta = $consultaCuenta->fetchColumn();
 
-/* Comprueba que la cuenta esté disponible */
-if ($usuarioId !== "") {
+        if ($correoCuenta === false || strtolower(trim($correoCuenta)) !== $email) {
+            $conexion->rollBack();
+            redirigir("agregar.php", ["error" => "cuenta"], 303);
+        }
 
-    $consultaCuenta = $conexion->prepare(
-        "SELECT u.id, u.email
-         FROM usuarios AS u
-         LEFT JOIN alumnos AS a
-             ON a.usuario_id = u.id
-         WHERE u.id = :usuario_id
-           AND u.rol = 'Alumno'
-           AND a.id IS NULL
-         LIMIT 1"
+        $consultaVinculo = $conexion->prepare("SELECT id FROM alumnos WHERE usuario_id = :id LIMIT 1");
+        $consultaVinculo->execute([":id" => (int) $usuarioId]);
+        if ($consultaVinculo->fetchColumn()) {
+            $conexion->rollBack();
+            redirigir("agregar.php", ["error" => "cuenta_vinculada"], 303);
+        }
+    }
+
+    $consulta = $conexion->prepare(
+        "INSERT INTO alumnos (nombre, apellido, email, usuario_id)
+         VALUES (:nombre, :apellido, :email, :usuario_id)"
     );
-
-    $consultaCuenta->execute([
-        ":usuario_id" => (int) $usuarioId
+    $consulta->execute([
+        ":nombre" => $nombre,
+        ":apellido" => $apellido,
+        ":email" => $email,
+        ":usuario_id" => $usuarioId === "" ? null : (int) $usuarioId,
     ]);
 
-    $cuenta = $consultaCuenta->fetch(PDO::FETCH_ASSOC);
-
-    /* Verifica que exista y que coincida el correo */
-    if (
-        !$cuenta ||
-        strtolower(trim($cuenta["email"])) !== $email
-    ) {
-        header("Location: agregar.php?error=cuenta");
-        exit;
+    if ($conexion->inTransaction()) {
+        $conexion->commit();
     }
-}
 
-
-/* Consulta preparada para guardar el alumno */
-$consulta = $conexion->prepare(
-    "INSERT INTO alumnos
-        (nombre, apellido, email, usuario_id)
-     VALUES
-        (:nombre, :apellido, :email, :usuario_id)"
-);
-
-$consulta->execute([
-    ":nombre" => $nombre,
-    ":apellido" => $apellido,
-    ":email" => $email,
-    ":usuario_id" => $usuarioId === ""
-        ? null
-        : (int) $usuarioId
-]);
-
-    header("Location: index.php?mensaje=guardado");
-    exit;
+    redirigir("alumnos.php", ["mensaje" => "guardado"], 303);
 
 } catch (PDOException $error) {
-
- 
-} catch (PDOException $error) {
+    if ($conexion->inTransaction()) {
+        $conexion->rollBack();
+    }
 
     /* Identifica el código de error de MySQL */
     $codigoMysql = (int) ($error->errorInfo[1] ?? 0);
@@ -178,23 +152,18 @@ $consulta->execute([
 
         /* Cuenta vinculada a otro alumno */
         if (str_contains($detalle, "uq_alumnos_usuario_id")) {
-            header("Location: agregar.php?error=cuenta_vinculada");
-            exit;
+            redirigir("agregar.php", ["error" => "cuenta_vinculada"], 303);
         }
 
         /* Correo electrónico duplicado */
-        header("Location: agregar.php?error=duplicado");
-        exit;
+        redirigir("agregar.php", ["error" => "duplicado"], 303);
     }
 
     /* La cuenta seleccionada ya no existe */
     if ($codigoMysql === 1452) {
-        header("Location: agregar.php?error=cuenta");
-        exit;
+        redirigir("agregar.php", ["error" => "cuenta"], 303);
     }
 
-    /* Otros errores de base de datos */
-    header("Location: agregar.php?error=servidor");
-    exit;
+    error_log("Alta de alumno: " . $error->getMessage());
+    redirigir("agregar.php", ["error" => "servidor"], 303);
 }
-  

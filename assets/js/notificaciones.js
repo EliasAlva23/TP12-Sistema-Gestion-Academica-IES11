@@ -1,274 +1,48 @@
 "use strict";
 
+const campana = document.getElementById("campanaAvisos");
 
-const botonNotificaciones =
-    document.getElementById(
-        "botonNotificaciones"
-    );
+if (campana && ["localhost", "127.0.0.1"].includes(location.hostname) && location.protocol === "http:") {
+    const lista = document.getElementById("listaNotificaciones");
+    const contador = document.getElementById("contadorNotificaciones");
 
+    async function actualizarAvisos() {
+        try {
+            const respuesta = await fetch(campana.dataset.avisosUrl, { credentials: "same-origin" });
+            if (!respuesta.ok) return;
 
-const panelNotificaciones =
-    document.getElementById(
-        "panelNotificaciones"
-    );
+            const avisos = await respuesta.json();
+            contador.textContent = avisos.length > 5 ? "5+" : String(avisos.length);
+            contador.hidden = avisos.length === 0;
+            lista.replaceChildren();
 
-
-const listaNotificaciones =
-    document.getElementById(
-        "listaNotificaciones"
-    );
-
-
-const contadorNotificaciones =
-    document.getElementById(
-        "contadorNotificaciones"
-    );
-
-
-let cantidadNoLeidas = 0;
-
-
-
-/* ==================================================
-   ABRIR / CERRAR PANEL
-================================================== */
-
-if (
-    botonNotificaciones &&
-    panelNotificaciones
-) {
-
-    botonNotificaciones
-        .addEventListener(
-            "click",
-            () => {
-
-                panelNotificaciones
-                    .classList
-                    .toggle("d-none");
-
+            if (avisos.length === 0) {
+                lista.textContent = "Sin notificaciones nuevas.";
             }
-        );
 
+            for (const aviso of avisos.slice(0, 5)) {
+                const articulo = document.createElement("div");
+                articulo.className = "notificacion-item";
+                const titulo = document.createElement("strong");
+                const mensaje = document.createElement("p");
+                titulo.textContent = aviso.titulo;
+                mensaje.textContent = aviso.mensaje;
+                articulo.append(titulo, mensaje);
+                lista.append(articulo);
+            }
+        } catch {
+            // El historial sigue disponible por HTTP.
+        }
+    }
+
+    function conectarAvisos() {
+        const socket = new WebSocket(`ws://${location.hostname}:8080`);
+        socket.addEventListener("open", actualizarAvisos);
+        socket.addEventListener("message", (evento) => {
+            if (evento.data === "actualizar") actualizarAvisos();
+        });
+        socket.addEventListener("close", () => setTimeout(conectarAvisos, 15000));
+    }
+
+    conectarAvisos();
 }
-
-
-
-/* ==================================================
-   ACTUALIZAR CONTADOR
-================================================== */
-
-function actualizarContador() {
-
-    if (!contadorNotificaciones) {
-        return;
-    }
-
-
-    contadorNotificaciones.textContent =
-        cantidadNoLeidas;
-
-
-    if (cantidadNoLeidas > 0) {
-
-        contadorNotificaciones
-            .classList
-            .remove("d-none");
-
-    } else {
-
-        contadorNotificaciones
-            .classList
-            .add("d-none");
-
-    }
-
-}
-
-
-
-/* ==================================================
-   MOSTRAR NOTIFICACIÓN
-================================================== */
-
-function mostrarNotificacion(datos) {
-
-    if (!listaNotificaciones) {
-        return;
-    }
-
-
-    const vacio =
-        listaNotificaciones
-            .querySelector(
-                ".text-muted"
-            );
-
-
-    if (vacio) {
-        vacio.remove();
-    }
-
-
-    const item =
-        document.createElement(
-            "div"
-        );
-
-
-    item.className =
-        "notificacion-item nueva";
-
-
-    const titulo =
-        document.createElement(
-            "strong"
-        );
-
-
-    titulo.textContent =
-        datos.titulo
-        ?? "Nueva notificación";
-
-
-    const mensaje =
-        document.createElement(
-            "p"
-        );
-
-
-    mensaje.textContent =
-        datos.mensaje
-        ?? "";
-
-
-    const fecha =
-        document.createElement(
-            "small"
-        );
-
-
-    fecha.textContent =
-        "Ahora";
-
-
-    item.append(
-        titulo,
-        mensaje,
-        fecha
-    );
-
-
-    listaNotificaciones.prepend(
-        item
-    );
-
-
-    cantidadNoLeidas++;
-
-    actualizarContador();
-
-}
-
-
-
-/* ==================================================
-   CONEXIÓN WEBSOCKET
-================================================== */
-
-let socket;
-
-
-function conectarWebSocket() {
-
-    try {
-
-        socket =
-            new WebSocket(
-                "ws://localhost:8080"
-            );
-
-
-        socket.addEventListener(
-            "open",
-            () => {
-
-                console.log(
-                    "WebSocket conectado"
-                );
-
-            }
-        );
-
-
-        socket.addEventListener(
-            "message",
-            (evento) => {
-
-                try {
-
-                    const datos =
-                        JSON.parse(
-                            evento.data
-                        );
-
-
-                    mostrarNotificacion(
-                        datos
-                    );
-
-                } catch (error) {
-
-                    console.error(
-                        "Mensaje WebSocket inválido:",
-                        error
-                    );
-
-                }
-
-            }
-        );
-
-
-        socket.addEventListener(
-            "close",
-            () => {
-
-                console.log(
-                    "WebSocket desconectado"
-                );
-
-                setTimeout(
-                    conectarWebSocket,
-                    3000
-                );
-
-            }
-        );
-
-
-        socket.addEventListener(
-            "error",
-            (error) => {
-
-                console.error(
-                    "Error WebSocket:",
-                    error
-                );
-
-            }
-        );
-
-    } catch (error) {
-
-        console.error(
-            "No se pudo iniciar WebSocket:",
-            error
-        );
-
-    }
-
-}
-
-
-conectarWebSocket();

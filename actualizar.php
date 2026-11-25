@@ -1,14 +1,10 @@
 <?php
-require_once __DIR__ . "/includes/verificar_sesion.php";
-
-$rolesPermitidos = ["Administrador"];
+$seccionRequerida = "crud_alumnos";
 require_once __DIR__ . "/includes/verificar_rol.php";
-require_once "conexion.php";
 
 /* Solo permite datos enviados por formulario */
 if ($_SERVER["REQUEST_METHOD"] !== "POST") {
-    header("Location: index.php");
-    exit;
+    redirigir("alumnos.php");
 }
 
 
@@ -35,14 +31,13 @@ $id = filter_input(
 );
 
 if (!$id || $id < 1) {
-    header("Location: index.php?mensaje=no_encontrado");
-    exit;
+    redirigir("alumnos.php", ["mensaje" => "no_encontrado"], 303);
 }
 
 /* Recibe y limpia los datos */
-$nombre = trim($_POST["nombre"] ?? "");
-$apellido = trim($_POST["apellido"] ?? "");
-$email = trim($_POST["email"] ?? "");
+$nombre = trim(is_string($_POST["nombre"] ?? null) ? $_POST["nombre"] : "");
+$apellido = trim(is_string($_POST["apellido"] ?? null) ? $_POST["apellido"] : "");
+$email = trim(is_string($_POST["email"] ?? null) ? $_POST["email"] : "");
 
 /* Corrige mayúsculas y minúsculas */
 $nombre = mb_convert_case(
@@ -65,10 +60,7 @@ if (
     $apellido === "" ||
     $email === ""
 ) {
-    header(
-        "Location: editar.php?id=$id&error=campos"
-    );
-    exit;
+    redirigir("editar.php", ["id" => $id, "error" => "campos"], 303);
 }
 
 /* Validación de longitud */
@@ -78,10 +70,7 @@ if (
     mb_strlen($apellido) < 2 ||
     mb_strlen($apellido) > 60
 ) {
-    header(
-        "Location: editar.php?id=$id&error=longitud"
-    );
-    exit;
+    redirigir("editar.php", ["id" => $id, "error" => "longitud"], 303);
 }
 
 /* Solo permite letras en nombre y apellido */
@@ -95,23 +84,14 @@ if (
         $apellido
     )
 ) {
-    header(
-        "Location: editar.php?id=$id&error=nombre"
-    );
-    exit;
+    redirigir("editar.php", ["id" => $id, "error" => "nombre"], 303);
 }
 
 /* Valida el correo */
 if (
-    !filter_var(
-        $email,
-        FILTER_VALIDATE_EMAIL
-    )
+    strlen($email) > 100 || !filter_var($email, FILTER_VALIDATE_EMAIL)
 ) {
-    header(
-        "Location: editar.php?id=$id&error=email"
-    );
-    exit;
+    redirigir("editar.php", ["id" => $id, "error" => "email"], 303);
 }
 
 try {
@@ -128,10 +108,7 @@ try {
     ]);
 
     if (!$buscar->fetch()) {
-        header(
-            "Location: index.php?mensaje=no_encontrado"
-        );
-        exit;
+        redirigir("alumnos.php", ["mensaje" => "no_encontrado"], 303);
     }
 
     /* Actualiza mediante una consulta preparada */
@@ -151,21 +128,14 @@ try {
         ":id" => $id
     ]);
 
-    header("Location: index.php?mensaje=actualizado");
-    exit;
+    redirigir("alumnos.php", ["mensaje" => "actualizado"], 303);
 
 } catch (PDOException $error) {
 
     /* Detecta un correo duplicado */
     if ($error->getCode() === "23000") {
-        header(
-            "Location: editar.php?id=$id&error=duplicado"
-        );
-        exit;
+        redirigir("editar.php", ["id" => $id, "error" => "duplicado"], 303);
     }
 
-    header(
-        "Location: editar.php?id=$id&error=servidor"
-    );
-    exit;
+    redirigir("editar.php", ["id" => $id, "error" => "servidor"], 303);
 }

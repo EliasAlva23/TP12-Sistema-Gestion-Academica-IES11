@@ -1,54 +1,20 @@
-
 <?php
-session_start();
+require_once __DIR__ . "/includes/app.php";
+
+iniciar_sesion();
 
 /* Si ya inició sesión, puede cambiar su contraseña
    desde el panel del sistema. */
 if (isset($_SESSION["usuario_id"])) {
-    header("Location: cambiar_contrasena.php");
-    exit;
+    redirigir("cambiar_contrasena.php");
 }
 
-/* Token de seguridad para la solicitud */
-if (empty($_SESSION["csrf_recuperacion"])) {
-    $_SESSION["csrf_recuperacion"] = bin2hex(
-        random_bytes(32)
-    );
-}
+$titulo = "Recuperar contraseña";
+$paginaPublica = true;
+require __DIR__ . "/includes/header.php";
 ?>
 
-<!DOCTYPE html>
-<html lang="es">
-
-<head>
-    <meta charset="UTF-8">
-
-    <meta
-        name="viewport"
-        content="width=device-width, initial-scale=1.0"
-    >
-
-    <title>Recuperar contraseña | IES N.º 11</title>
-
-    <link
-        href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
-        rel="stylesheet"
-    >
-
-    <link
-        href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css"
-        rel="stylesheet"
-    >
-
-    <link
-        rel="stylesheet"
-        href="assets/css/estilos.css"
-    >
-</head>
-
-<body class="pagina-acceso">
-
-    <main class="contenedor-acceso">
+    <main id="contenido-principal" tabindex="-1" class="contenedor-acceso">
 
         <!-- Panel institucional -->
         <section class="panel-institucional">
@@ -58,15 +24,15 @@ if (empty($_SESSION["csrf_recuperacion"])) {
                 <div class="icono-institucional">
 
                     <img
-                        src="assets/img/logo-ies11.png"
-                        alt="Logo del IES N.º 11"
+                        src="<?= esc(url_app("assets/img/logo-ies11.png")) ?>"
+                        alt=""
                         class="logo-ies"
                     >
 
                 </div>
 
                 <div>
-                    <h1>IES N.º 11</h1>
+                    <p class="marca-nombre">IES N.º 11</p>
                     <p>Sistema de Gestión Académica</p>
                 </div>
 
@@ -78,138 +44,34 @@ if (empty($_SESSION["csrf_recuperacion"])) {
                     Seguridad de la cuenta
                 </span>
 
-                <h2>
+                <p class="titulo-institucional">
                     Recuperá el acceso a tu cuenta
-                </h2>
-
-                <p>
-                    Protegemos tu información académica
-                    mediante un proceso seguro de
-                    recuperación de contraseña.
                 </p>
 
-                <ul class="beneficios-acceso">
-
-                    <li>
-                        <i class="bi bi-envelope-check"></i>
-                        Verificación mediante correo electrónico
-                    </li>
-
-                    <li>
-                        <i class="bi bi-shield-lock"></i>
-                        Enlace de recuperación temporal
-                    </li>
-
-                    <li>
-                        <i class="bi bi-key"></i>
-                        Creación de una nueva contraseña
-                    </li>
-
-                </ul>
+                <p>Solicitá ayuda a la administración del instituto para volver a entrar al sistema.</p>
 
             </div>
 
         </section>
 
-        <!-- Formulario de recuperación -->
-        <section class="panel-acceso">
+        <!-- Información de recuperación -->
+        <div class="panel-acceso">
 
-            <div class="formulario-acceso">
+            <section class="formulario-acceso tarjeta-panel" aria-labelledby="titulo-acceso">
 
-                <div class="encabezado-formulario">
+                <header class="encabezado-formulario">
 
-                    <span>RECUPERACIÓN DE CUENTA</span>
+                    <h1 id="titulo-acceso">¿Olvidaste tu contraseña?</h1>
 
-                    <h2>¿Olvidaste tu contraseña?</h2>
 
-                    <p>
-                        Ingresá el correo electrónico
-                        asociado a tu cuenta.
-                    </p>
+                </header>
 
-                </div>
+                <p class="alert alert-info">La recuperación automática todavía no está disponible.</p>
+                <p class="enlace-alternativo"><a href="<?= esc(url_app("login.php")) ?>">Volver al inicio de sesión</a></p>
 
-<?php if (($_GET["enviado"] ?? "") === "1"): ?>
+            </section>
 
-    <div class="alert alert-success" role="status">
-        <i class="bi bi-check-circle"></i>
-
-        Si el correo electrónico está registrado,
-        se generó una solicitud de recuperación.
-
-        Durante las pruebas, revisá el archivo
-        privado de recuperación.
-    </div>
-
-<?php endif; ?>
-
-                <form
-                    action="solicitar_recuperacion.php"
-                    method="POST"
-                >
-
-                    <input
-                        type="hidden"
-                        name="csrf_recuperacion"
-                        value="<?= htmlspecialchars(
-                            $_SESSION["csrf_recuperacion"],
-                            ENT_QUOTES,
-                            "UTF-8"
-                        ) ?>"
-                    >
-
-                    <div class="mb-4">
-
-                        <label
-                            for="correo"
-                            class="form-label"
-                        >
-                            Correo electrónico
-                        </label>
-
-                        <div class="input-group">
-
-                            <span class="input-group-text">
-                                <i class="bi bi-envelope"></i>
-                            </span>
-
-                            <input
-                                type="email"
-                                class="form-control"
-                                id="correo"
-                                name="correo"
-                                maxlength="254"
-                                autocomplete="email"
-                                placeholder="ejemplo@correo.com"
-                                required
-                            >
-
-                        </div>
-
-                    </div>
-
-                    <button
-                        type="submit"
-                        class="btn boton-principal w-100"
-                    >
-                        <i class="bi bi-send"></i>
-                        Solicitar recuperación
-                    </button>
-
-                    <p class="enlace-alternativo">
-
-                        <a href="login.php">
-                            <i class="bi bi-arrow-left"></i>
-                            Volver al inicio de sesión
-                        </a>
-
-                    </p>
-
-                </form>
-
-            </div>
-
-        </section>
+        </div>
 
     </main>
 

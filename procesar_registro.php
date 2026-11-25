@@ -1,44 +1,27 @@
 <?php
 
-/* Inicia la sesión para verificar el token CSRF */
-if (session_status() === PHP_SESSION_NONE) {
-    session_start();
-}
+require_once __DIR__ . "/includes/app.php";
 
-require_once "conexion.php";
+iniciar_sesion();
 
-/* Solo permite solicitudes enviadas desde el formulario */
 if ($_SERVER["REQUEST_METHOD"] !== "POST") {
-    header("Location: registro.php");
-    exit;
+    redirigir("registro.php");
 }
 
-/* Verifica el token CSRF del registro público */
-$tokenCsrf = $_POST["csrf_registro"] ?? null;
+if (!empty($_SESSION["usuario_id"])) {
+    redirigir("dashboard.php", [], 303);
+}
 
-if (
-    !is_string($tokenCsrf) ||
-    empty($_SESSION["csrf_registro"]) ||
-    !hash_equals(
-        $_SESSION["csrf_registro"],
-        $tokenCsrf
-    )
-) {
-    http_response_code(403);
-
-    exit(
-        "Solicitud no válida. Volvé al formulario " .
-        "de registro e intentá nuevamente."
-    );
+if (!csrf_validar($_POST["csrf_registro"] ?? null, "csrf_registro")) {
+    error_acceso(403, "La solicitud no es válida.");
 }
 
 /* Recibir y limpiar los datos */
-$usuario = trim($_POST["usuario"] ?? "");
-$email = trim($_POST["email"] ?? "");
-$rol = trim($_POST["rol"] ?? "");
-$password = $_POST["password"] ?? "";
-$confirmarPassword =
-    $_POST["confirmar_password"] ?? "";
+$usuario = trim(is_string($_POST["usuario"] ?? null) ? $_POST["usuario"] : "");
+$email = trim(is_string($_POST["email"] ?? null) ? $_POST["email"] : "");
+$rol = trim(is_string($_POST["rol"] ?? null) ? $_POST["rol"] : "");
+$password = (is_string($_POST["password"] ?? null) ? $_POST["password"] : "");
+$confirmarPassword = is_string($_POST["confirmar_password"] ?? null) ? $_POST["confirmar_password"] : "";
 $terminos = $_POST["terminos"] ?? "";
 
 /* Función para volver al formulario con un mensaje */
@@ -46,13 +29,7 @@ function volverAlRegistro(
     string $mensaje,
     string $tipo = "error"
 ): void {
-    $parametros = http_build_query([
-        "mensaje" => $mensaje,
-        "tipo" => $tipo
-    ]);
-
-    header("Location: registro.php?" . $parametros);
-    exit;
+    redirigir("registro.php", ["mensaje" => $mensaje, "tipo" => $tipo], 303);
 }
 
 /* Validar campos obligatorios */
@@ -87,7 +64,7 @@ $usuario = strtolower($usuario);
 $email = strtolower($email);
 
 /* Validar correo electrónico */
-if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+if (strlen($email) > 120 || !filter_var($email, FILTER_VALIDATE_EMAIL)) {
     volverAlRegistro(
         "Ingresá un correo electrónico válido."
     );
@@ -141,6 +118,8 @@ if ($terminos !== "1") {
         "Debés aceptar las condiciones de uso."
     );
 }
+
+require_once __DIR__ . "/config/conexion.php";
 
 try {
     /*
@@ -205,6 +184,7 @@ try {
     );
 
 } catch (PDOException $error) {
+    error_log("Registro: " . $error->getMessage());
     /*
      * No se muestra el detalle técnico del error
      * para evitar exponer información del sistema.

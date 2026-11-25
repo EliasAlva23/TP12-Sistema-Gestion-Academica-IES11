@@ -6,4 +6,4 @@ WORKDIR /app
 
 COPY . .
 
-CMD ["sh", "-c", "php -S 0.0.0.0:${PORT:-8080} -t /app"]
+CMD ["sh", "-c", "php -d display_errors=Off -d log_errors=On -S 0.0.0.0:${PORT:-8080} -t /app"]

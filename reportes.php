@@ -1,7 +1,6 @@
 <?php
-require_once __DIR__ . "/includes/verificar_sesion.php";
-
-require_once "config/conexion.php";
+$seccionRequerida = "reportes";
+require_once __DIR__ . "/includes/verificar_rol.php";
 
 $titulo = "Reportes académicos";
 $pagina = "reportes";
@@ -165,38 +164,15 @@ $ultimosUsuarios = $conexion
     ->fetchAll();
 
 
-include "includes/header.php";
-include "includes/sidebar.php";
+require __DIR__ . "/includes/header.php";
 
 ?>
 
-<div class="contenido flex-grow-1">
-
-    <div class="barra-superior">
-
-        <button
-            class="btn d-lg-none"
-            id="botonMenu"
-            aria-label="Abrir menú"
-        >
-            <i class="bi bi-list fs-4"></i>
-        </button>
-
-
-        <h1 class="titulo-pagina">
-            <?= e($titulo) ?>
-        </h1>
-
-
-        <span>
-            <i class="bi bi-building"></i>
-            IES N.º 11
-        </span>
-
-    </div>
-
-
-    <main class="p-3 p-md-4">
+<main id="contenido-principal" tabindex="-1" class="pagina-contenido">
+    <header class="encabezado-pagina">
+        <h1><?= esc($titulo) ?></h1>
+        <p>Consultá las altas de alumnos y la distribución de usuarios por rol.</p>
+    </header>
 
 
         <!-- ==========================================
@@ -296,54 +272,25 @@ include "includes/sidebar.php";
              GRÁFICOS
         =========================================== -->
 
-        <div class="row g-4 mt-1">
+        <div class="rejilla-graficos my-4">
+            <?php
+            $idGrafico = "reporteAltasChart";
+            $tituloGrafico = "Altas de alumnos · últimos 30 días";
+            $tipoGrafico = "bar";
+            $etiquetasGrafico = $etiquetasAltas;
+            $valoresGrafico = $valoresAltas;
+            require __DIR__ . "/includes/grafico.php";
+            ?>
 
-
-            <div class="col-12 col-lg-8">
-
-                <div class="tarjeta-panel">
-
-                    <h2>
-                        Altas de alumnos
-                        — últimos 30 días
-                    </h2>
-
-                    <div class="grafico">
-
-                        <canvas
-                            id="reporteAltasChart"
-                        ></canvas>
-
-                    </div>
-
-                </div>
-
-            </div>
-
-
-            <div class="col-12 col-lg-4">
-
-                <div class="tarjeta-panel">
-
-                    <h2>
-                        Distribución
-                        de usuarios por rol
-                    </h2>
-
-                    <div class="grafico">
-
-                        <canvas
-                            id="reporteRolesChart"
-                        ></canvas>
-
-                    </div>
-
-                </div>
-
-            </div>
-
+            <?php
+            $idGrafico = "reporteRolesChart";
+            $tituloGrafico = "Distribución de usuarios por rol";
+            $tipoGrafico = "doughnut";
+            $etiquetasGrafico = $etiquetasRoles;
+            $valoresGrafico = $valoresRoles;
+            require __DIR__ . "/includes/grafico.php";
+            ?>
         </div>
-
 
         <!-- ==========================================
              ÚLTIMOS USUARIOS
@@ -360,13 +307,13 @@ include "includes/sidebar.php";
                     </h2>
 
 
-                    <div class="table-responsive">
+                    <div class="table-responsive" tabindex="0" role="region" aria-label="Últimos usuarios registrados">
 
                         <table
                             class="
                                 table
                                 table-hover
-                                tabla-datos
+                                tabla-datos tabla-registros
                             "
                         >
 
@@ -374,15 +321,15 @@ include "includes/sidebar.php";
 
                                 <tr>
 
-                                    <th>ID</th>
+                                    <th scope="col">ID</th>
 
-                                    <th>Usuario</th>
+                                    <th scope="col">Usuario</th>
 
-                                    <th>Correo</th>
+                                    <th scope="col">Correo</th>
 
-                                    <th>Rol</th>
+                                    <th scope="col">Rol</th>
 
-                                    <th>Fecha</th>
+                                    <th scope="col">Fecha</th>
 
                                 </tr>
 
@@ -406,7 +353,7 @@ include "includes/sidebar.php";
 
 
                                     <td>
-                                        <?= e(
+                                        <?= esc(
                                             $usuario[
                                                 "usuario"
                                             ]
@@ -415,7 +362,7 @@ include "includes/sidebar.php";
 
 
                                     <td>
-                                        <?= e(
+                                        <?= esc(
                                             $usuario[
                                                 "email"
                                             ]
@@ -424,7 +371,7 @@ include "includes/sidebar.php";
 
 
                                     <td>
-                                        <?= e(
+                                        <?= esc(
                                             $usuario[
                                                 "rol"
                                             ]
@@ -466,228 +413,8 @@ include "includes/sidebar.php";
 
     </main>
 
-</div>
-
-
-</div>
-
-
-<script
-    src="
-    https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
-></script>
-
-
-<script
-    src="
-    https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"
-></script>
-
-
-<script>
-
-const reporteAcademico =
-
-<?= json_encode(
-
-    [
-
-        "altas" => [
-
-            "etiquetas" =>
-                $etiquetasAltas,
-
-            "valores" =>
-                $valoresAltas
-
-        ],
-
-        "roles" => [
-
-            "etiquetas" =>
-                $etiquetasRoles,
-
-            "valores" =>
-                $valoresRoles
-
-        ]
-
-    ],
-
-    JSON_UNESCAPED_UNICODE
-
-) ?>;
-
-
-const altasCanvas =
-    document.getElementById(
-        "reporteAltasChart"
-    );
-
-
-if (altasCanvas) {
-
-    new Chart(
-        altasCanvas,
-        {
-
-            type: "bar",
-
-            data: {
-
-                labels:
-                    reporteAcademico
-                        .altas
-                        .etiquetas,
-
-                datasets: [
-
-                    {
-
-                        label:
-                            "Alumnos registrados",
-
-                        data:
-                            reporteAcademico
-                                .altas
-                                .valores,
-
-                        backgroundColor:
-                            "#4c78c2",
-
-                        borderRadius:
-                            4
-
-                    }
-
-                ]
-
-            },
-
-            options: {
-
-                responsive: true,
-
-                maintainAspectRatio:
-                    false,
-
-                plugins: {
-
-                    legend: {
-                        display: false
-                    }
-
-                },
-
-                scales: {
-
-                    y: {
-
-                        beginAtZero: true,
-
-                        ticks: {
-                            precision: 0
-                        }
-
-                    }
-
-                }
-
-            }
-
-        }
-
-    );
-
-}
-
-
-const rolesCanvas =
-    document.getElementById(
-        "reporteRolesChart"
-    );
-
-
-if (rolesCanvas) {
-
-    new Chart(
-        rolesCanvas,
-        {
-
-            type: "doughnut",
-
-            data: {
-
-                labels:
-                    reporteAcademico
-                        .roles
-                        .etiquetas,
-
-                datasets: [
-
-                    {
-
-                        data:
-                            reporteAcademico
-                                .roles
-                                .valores,
-
-                        backgroundColor: [
-
-                            "#2c374e",
-
-                            "#4c78c2",
-
-                            "#36afd3",
-
-                            "#e9a62f"
-
-                        ],
-
-                        borderColor:
-                            "#ffffff",
-
-                        borderWidth:
-                            2
-
-                    }
-
-                ]
-
-            },
-
-            options: {
-
-                responsive: true,
-
-                maintainAspectRatio:
-                    false,
-
-                plugins: {
-
-                    legend: {
-
-                        position:
-                            "bottom"
-
-                    }
-
-                }
-
-            }
-
-        }
-
-    );
-
-}
-
-</script>
-
-
-<script
-    src="assets/js/scripts.js"
-></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js" defer></script>
+<script src="<?= esc(url_app("assets/js/charts.js")) ?>" defer></script>
 
 
 </body>
