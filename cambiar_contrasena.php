@@ -1,6 +1,4 @@
-
 <?php
-
 require_once __DIR__ . "/includes/verificar_sesion.php";
 /* Permite el acceso a todos los usuarios autenticados */
 $rolesPermitidos = [
