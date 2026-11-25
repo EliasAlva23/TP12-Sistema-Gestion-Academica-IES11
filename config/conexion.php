@@ -2,8 +2,7 @@
 
 date_default_timezone_set("America/Argentina/Jujuy");
 
-$url = getenv("MYSQL_PUBLIC_URL")
-    ?: getenv("DATABASE_URL");
+$url = getenv("DATABASE_URL");
 
 try {
 
@@ -38,9 +37,10 @@ try {
     );
 
 } catch (PDOException $error) {
+
     error_log(
-        "Error de conexión MySQL: " .
-        $error->getMessage()
+        "Error de conexión: "
+        . $error->getMessage()
     );
 
     die("No fue posible conectar con la base de datos.");
