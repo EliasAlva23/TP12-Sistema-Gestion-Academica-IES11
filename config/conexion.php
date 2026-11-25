@@ -2,23 +2,23 @@
 
 date_default_timezone_set("America/Argentina/Jujuy");
 
-$url = getenv("DATABASE_URL");
+$url = getenv("MYSQL_PUBLIC_URL")
+    ?: getenv("DATABASE_URL");
 
 try {
 
     if ($url) {
-
         $datos = parse_url($url);
 
         $servidor = $datos["host"];
         $puerto = $datos["port"] ?? 3306;
-        $usuario = $datos["user"];
-        $contrasena = $datos["pass"] ?? "";
-        $baseDatos = ltrim($datos["path"], "/");
-
+        $usuario = rawurldecode($datos["user"] ?? "");
+        $contrasena = rawurldecode($datos["pass"] ?? "");
+        $baseDatos = rawurldecode(
+            ltrim($datos["path"] ?? "", "/")
+        );
     } else {
-
-        // Configuración local XAMPP
+        // XAMPP local
         $servidor = "127.0.0.1";
         $puerto = 3307;
         $usuario = "root";
@@ -38,10 +38,9 @@ try {
     );
 
 } catch (PDOException $error) {
-
     error_log(
-        "Error de conexión: "
-        . $error->getMessage()
+        "Error de conexión MySQL: " .
+        $error->getMessage()
     );
 
     die("No fue posible conectar con la base de datos.");
