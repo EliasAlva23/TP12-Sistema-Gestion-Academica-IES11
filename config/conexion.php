@@ -2,36 +2,30 @@
 
 date_default_timezone_set("America/Argentina/Jujuy");
 
-/*
- * LOCAL:
- * usa los valores de XAMPP.
- *
- * RAILWAY:
- * usa directamente las variables MYSQL*
- * que Railway ya inyecta en el servicio.
- */
-
-$servidor = getenv("MYSQLHOST")
-    ?: getenv("DB_HOST")
-    ?: "127.0.0.1";
-
-$puerto = getenv("MYSQLPORT")
-    ?: getenv("DB_PORT")
-    ?: "3307";
-
-$baseDatos = getenv("MYSQLDATABASE")
-    ?: getenv("DB_NAME")
-    ?: "instituto";
-
-$usuario = getenv("MYSQLUSER")
-    ?: getenv("DB_USER")
-    ?: "root";
-
-$contrasena = getenv("MYSQLPASSWORD")
-    ?: getenv("DB_PASSWORD")
-    ?: "";
+$url = getenv("DATABASE_URL");
 
 try {
+
+    if ($url) {
+
+        $datos = parse_url($url);
+
+        $servidor = $datos["host"];
+        $puerto = $datos["port"] ?? 3306;
+        $usuario = $datos["user"];
+        $contrasena = $datos["pass"] ?? "";
+        $baseDatos = ltrim($datos["path"], "/");
+
+    } else {
+
+        // Configuración local XAMPP
+        $servidor = "127.0.0.1";
+        $puerto = 3307;
+        $usuario = "root";
+        $contrasena = "";
+        $baseDatos = "instituto";
+    }
+
     $conexion = new PDO(
         "mysql:host={$servidor};port={$puerto};dbname={$baseDatos};charset=utf8mb4",
         $usuario,
@@ -46,13 +40,11 @@ try {
 } catch (PDOException $error) {
 
     error_log(
-        "Error de conexión a la base de datos: "
+        "Error de conexión: "
         . $error->getMessage()
     );
 
-    die(
-        "No fue posible conectar con la base de datos."
-    );
+    die("No fue posible conectar con la base de datos.");
 }
 
 if (!function_exists("e")) {
