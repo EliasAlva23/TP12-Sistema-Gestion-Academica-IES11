@@ -16,6 +16,7 @@ try {
         $baseDatos = rawurldecode(
             ltrim($datos["path"] ?? "", "/")
         );
+
     } else {
         // XAMPP local
         $servidor = "127.0.0.1";
@@ -39,8 +40,8 @@ try {
 } catch (PDOException $error) {
 
     error_log(
-        "Error de conexión: "
-        . $error->getMessage()
+        "Error de conexión: " .
+        $error->getMessage()
     );
 
     die("No fue posible conectar con la base de datos.");
